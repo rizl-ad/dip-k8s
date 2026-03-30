@@ -1,0 +1,49 @@
+name: Deploy Kubernetes cluster
+
+on:
+  # pull_request:
+  #   branches: [ main ]
+  workflow_dispatch:
+  repository_dispatch:
+    types: [ deploy-k8s ]
+
+jobs:
+
+  ansible-playbook:
+    name: Run Ansible playbook
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Clone repository on runner
+        uses: actions/checkout@v4
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Check required files
+        run: |
+          set -euo pipefail
+
+          check_file () {
+            local key="$1"
+            aws s3api head-object \
+              --bucket "${{ github.event.client_payload.bucket }}" \
+              --key "$key" \
+              --endpoint-url "${{ github.event.client_payload.endpoint }}" > /dev/null 2>&1 || \
+              { echo "File $key not found. Run the Terraform yc-infra project."; exit 1; }
+          }
+
+          check_file "${{ github.event.client_payload.key }}"
+          echo "The required files were found."
+
+      - name: Download inventory file
+        run: |
+          aws s3 cp "s3://${{ github.event.client_payload.bucket }}/${{ github.event.client_payload.inv-key }}" \
+            "${{ github.event.client_payload.inv-key }}" --endpoint-url="${{ github.event.client_payload.endpoint }}"
+
+      # - name: Run Ansible playbook
+      #   run: |
+      #     ansible-galaxy collection install -r requirements.yml
+      #     ansible-playbook -i "${{ github.event.client_payload.inv-key }}" main.yml

@@ -1,0 +1,212 @@
+---
+# tasks file for k8s_nodes
+- name: Swap off
+  become: true
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Delete swap from fstab
+  become: true
+  ansible.posix.mount:
+    path: none
+    fstype: swap
+    state: absent
+
+# - name: Delete swapfile
+#   become: true
+#   ansible.builtin.file:
+#     path: /swapfile
+#     state: absent
+
+- name: Enable IP forwarding
+  become: true
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: true
+    state: present
+    reload: true
+
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: ansible_pkg_mgr == 'apt'
+
+- name: Update dnf cache
+  become: true
+  ansible.builtin.dnf:
+    update_cache: true
+  when: ansible_pkg_mgr == 'dnf'
+
+- name: Install containerd and required packages
+  become: true
+  ansible.builtin.package:
+    name:
+      - containerd
+      - ca-certificates
+      - curl
+      - gpg
+    state: present
+  register: package_install_result
+  until: package_install_result is success
+  retries: 30
+  delay: 20
+
+- name: Kubernetes GPG-key (Debian/Ubuntu)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Install containerd and required packages
+      become: true
+      ansible.builtin.package:
+        name: apt-transport-https
+        state: present
+      register: package_install_result
+      until: package_install_result is success
+      retries: 30
+      delay: 20
+
+    - name: Create /etc/apt/keyrings directory
+      become: true
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Get Kubernetes GPG-key
+      become: true
+      ansible.builtin.get_url:
+        url: "{{ k8s_deb_gpg_key_url }}"
+        dest: /tmp/k8s-release.key
+        mode: '0644'
+
+    - name: Create binary Kubernetes GPG-key
+      become: true
+      ansible.builtin.command:
+        cmd: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/k8s-release.key
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Add Kubernetes repository
+      become: true
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] {{ k8s_deb_baseurl }} /"
+        filename: kubernetes
+        state: present
+        update_cache: true
+
+- name: Kubernetes GPG-key (RedHat/CentOS)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Import Kubernetes GPG-key
+      become: true
+      ansible.builtin.rpm_key:
+        key: "{{ k8s_rpm_gpg_key_url }}"
+        state: present
+
+    - name: Add Kubernetes repository
+      become: true
+      ansible.builtin.yum_repository:
+        name: kubernetes
+        description: Kubernetes
+        baseurl: "{{ k8s_rpm_baseurl }}"
+        enabled: true
+        gpgcheck: true
+        gpgkey: "{{ k8s_rpm_gpg_key_url }}"
+      notify: Update dnf cache
+
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+- name: Install kubelet, kubeadm, kubectl packages
+  become: true
+  ansible.builtin.package:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+  register: kube_package_install_result
+  until: kube_package_install_result is success
+  retries: 30
+  delay: 20
+
+- name: Fix kube* version (Debian/Ubuntu)
+  become: true
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+  when: ansible_os_family == "Debian"
+
+- name: Fix kube* version (Red Hat/Fedora)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Install dnf-versionlock plugin
+      become: true
+      ansible.builtin.dnf:
+        name: python3-dnf-plugin-versionlock
+        state: present
+
+    - name: Fix kube* version
+      become: true
+      community.general.dnf_versionlock:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+
+- name: Enable and start kubelet
+  become: true
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: true
+    state: started
+
+- name: Create /etc/containerd directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create containerd configuration
+  become: true
+  ansible.builtin.shell: containerd config default > /etc/containerd/config.toml
+  args:
+    creates: /etc/containerd/config.toml
+
+- name: Enable SystemdCgroup in containerd config
+  become: true
+  ansible.builtin.replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+  notify: Restart containerd
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Load br_netfilter module
+  become: true
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Configure auto loading br_netfilter module
+  become: true
+  ansible.builtin.copy:
+    content: "br_netfilter\n"
+    dest: /etc/modules-load.d/k8s.conf
+    mode: '0644'
+  notify: Restart kubelet
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

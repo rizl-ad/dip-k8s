@@ -1,0 +1,34 @@
+---
+- name: Check hosts availability
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check SSH availability
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 300
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+- name: Prepare K8s-nodes
+  hosts: k8s_master,k8s_worker
+  roles:
+    - k8s_nodes
+
+- name: Deploy K8s master
+  hosts: k8s_master
+  roles:
+    - k8s_master
+    - calico
+
+- name: Deploy K8s worker
+  hosts: k8s_worker
+  roles:
+    - k8s_worker
+
+- name: Deploy ingress-nginx controller
+  hosts: k8s_master
+  roles:
+    - ingress_nginx
+    - kube_prometheus

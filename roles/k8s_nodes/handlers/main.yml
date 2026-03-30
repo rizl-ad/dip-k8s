@@ -1,0 +1,26 @@
+---
+# handlers file for k8s_nodes
+
+# - name: Update apt cache
+#   become: true
+#   ansible.builtin.apt:
+#     update_cache: true
+#   when: ansible_pkg_mgr == 'apt'
+
+- name: Update dnf cache
+  become: true
+  ansible.builtin.dnf:
+    update_cache: true
+  when: ansible_pkg_mgr == 'dnf'
+
+- name: Restart containerd
+  become: true
+  ansible.builtin.systemd:
+    name: containerd
+    state: restarted
+
+- name: Restart kubelet
+  become: true
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted

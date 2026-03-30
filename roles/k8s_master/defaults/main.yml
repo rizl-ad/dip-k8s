@@ -1,0 +1,6 @@
+---
+# defaults file for k8s_master
+apiserver_advertise_address:
+pod_network_cidr: "192.168.0.0/16"
+apiserver_cert_extra_sans:
+control_plane_endpoint:

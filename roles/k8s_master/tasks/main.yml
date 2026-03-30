@@ -1,0 +1,101 @@
+---
+# tasks file for k8s_master
+- name: Check init Kubernetes cluster
+  become: true
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+    # path: /etc/kubernetes/kubelet.conf
+  register: check_init_kubeadm
+
+- name: Get join commands
+  when:
+    - check_init_kubeadm.stat.exists
+    - ansible_host == apiserver_advertise_address
+  block:
+    - name: Get join command for worker-nodes
+      become: true
+      ansible.builtin.command: kubeadm token create --print-join-command
+      register: join_worker
+
+    - name: Get join command for control-plane nodes
+      become: true
+      ansible.builtin.shell: kubeadm init phase upload-certs --upload-certs | tail -1
+      register: cert_key
+
+    - name: Publish join cmd and first master name
+      ansible.builtin.add_host:
+        name: "K8s_data"
+        main_master_name: "{{ inventory_hostname }}"
+        join_worker_cmd: "{{ join_worker.stdout }}"
+        join_master_cmd: "{{ join_worker.stdout }} --control-plane --certificate-key {{ cert_key.stdout }}"
+
+- name: Init first Kubernetes cluster master
+  when:
+    - not check_init_kubeadm.stat.exists
+    - ansible_host == apiserver_advertise_address
+    - "'K8s_data' not in hostvars"
+  block:
+    - name: Kubeadm first master init
+      block:
+        - name: Kubeadm init
+          become: true
+          ansible.builtin.command: >
+            sudo kubeadm init
+            --apiserver-advertise-address={{ apiserver_advertise_address }}
+            --pod-network-cidr {{ pod_network_cidr }}
+            --apiserver-cert-extra-sans={{ apiserver_cert_extra_sans }}
+            --control-plane-endpoint={{ control_plane_endpoint }}
+            --upload-certs
+          register: kubeadm_init_result
+      rescue:
+        - name: Kubeadm reset
+          become: true
+          ansible.builtin.command: |
+            sudo kubeadm reset -f
+            sudo rm -rf /etc/cni/net.d
+
+    - name: Preparation k8s
+      when: kubeadm_init_result.rc == 0
+      block:
+        - name: Create .kube directory
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/.kube"
+            owner: "{{ ansible_user | default(ansible_env.USER) }}"
+            group: "{{ ansible_user | default(ansible_env.USER) }}"
+            state: directory
+            mode: "0755"
+
+        - name: Copy admin.conf to .kube/config
+          become: true
+          ansible.builtin.copy:
+            src: /etc/kubernetes/admin.conf
+            dest: "{{ ansible_env.HOME }}/.kube/config"
+            owner: "{{ ansible_user | default(ansible_env.USER) }}"
+            group: "{{ ansible_user | default(ansible_env.USER) }}"
+            remote_src: true
+            mode: "0644"
+
+        - name: Get join command for worker-nodes
+          become: true
+          ansible.builtin.command: kubeadm token create --print-join-command
+          register: join_worker
+
+        - name: Get join command for control-plane nodes
+          become: true
+          ansible.builtin.shell: kubeadm init phase upload-certs --upload-certs | tail -1
+          register: cert_key
+
+        - name: Publish join cmd and first master name
+          ansible.builtin.add_host:
+            name: "K8s_data"
+            main_master_name: "{{ inventory_hostname }}"
+            join_worker_cmd: "{{ join_worker.stdout }}"
+            join_master_cmd: "{{ join_worker.stdout }} --control-plane --certificate-key {{ cert_key.stdout }}"
+
+- name: Join Kubernetes cluster master
+  become: true
+  ansible.builtin.shell: "{{ hostvars['K8s_data']['join_master_cmd'] }}"
+  when:
+    - not check_init_kubeadm.stat.exists
+    - ansible_host != apiserver_advertise_address
+    - "'K8s_data' in hostvars"

@@ -1,0 +1,126 @@
+---
+# tasks file for kube_prometheus
+- name: Deploy kube-prometheus
+  when: ansible_host == apiserver_advertise_address
+  block:
+    - name: Clone kube-prometheus repository
+      ansible.builtin.git:
+        repo: https://github.com/prometheus-operator/kube-prometheus.git
+        dest: ./kube-prometheus
+        version: main
+        force: true
+
+    - name: Edit configuration files
+      ansible.builtin.replace:
+        path: ./kube-prometheus/manifests/setup/0alertmanagerConfigCustomResourceDefinition.yaml
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      loop:
+        - { regexp: '- =', replace: "- '='" }
+        - { regexp: '- =~', replace: "- '=~'" }
+        - { regexp: "- '='~", replace: "- '=~'" }
+
+    - name: Get setup files list
+      ansible.builtin.find:
+        paths: ./kube-prometheus/manifests/setup
+        patterns: "*.yaml,*.yml"
+      register: setup_files_list
+
+    - name: Apply kube-prometheus setup configurations
+      kubernetes.core.k8s:
+        src: "{{ item.path }}"
+        server_side_apply:
+          field_manager: ansible
+      loop: "{{ setup_files_list.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: Wait CRD condition established
+      kubernetes.core.k8s_info:
+        kind: CustomResourceDefinition
+        namespace: monitoring
+        wait: true
+        wait_condition:
+          type: Established
+          status: "True"
+        wait_timeout: 300
+        wait_sleep: 5
+
+    - name: Get configurations files list
+      ansible.builtin.find:
+        paths: ./kube-prometheus/manifests
+        patterns: "*.yaml,*.yml"
+      register: conf_files_list
+
+    - name: Apply kube-prometheus configurations
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ item.path }}"
+      loop: "{{ conf_files_list.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: Create kube-prometheus ingress rule
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: kube-prometheus-ingress
+            namespace: monitoring
+            # annotations:
+            #   nginx.ingress.kubernetes.io/use-regex: "true"
+            #   nginx.ingress.kubernetes.io/rewrite-target: '/$2'
+          spec:
+            ingressClassName: nginx
+            rules:
+              - http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: grafana
+                          port:
+                            number: 3000
+                    # - path: '/prometheus(/|$)(.*)'
+                    #   pathType: ImplementationSpecific
+                    #   backend:
+                    #     service:
+                    #       name: prometheus-k8s
+                    #       port:
+                    #         number: 9090
+                    # - path: '/alert(/|$)(.*)'
+                    #   pathType: ImplementationSpecific
+                    #   backend:
+                    #     service:
+                    #       name: alertmanager-main
+                    #       port:
+                    #         number: 9093
+
+    - name: Allow traffic from ingress to monitoring
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: allow-ingress-to-monitoring
+            namespace: monitoring
+          spec:
+            podSelector: {}
+            policyTypes:
+              - Ingress
+            ingress:
+              - from:
+                  - namespaceSelector:
+                      matchLabels:
+                        kubernetes.io/metadata.name: ingress-nginx
+                ports:
+                  - protocol: TCP
+                    port: 3000
+                  # - protocol: TCP
+                  #   port: 9090
+                  # - protocol: TCP
+                  #   port: 9093
