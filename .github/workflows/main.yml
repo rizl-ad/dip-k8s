@@ -7,6 +7,10 @@ on:
   repository_dispatch:
     types: [ deploy-k8s ]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
 
   ansible-playbook:
@@ -43,7 +47,8 @@ jobs:
           aws s3 cp "s3://${{ github.event.client_payload.bucket }}/${{ github.event.client_payload.inv-key }}" \
             "${{ github.event.client_payload.inv-key }}" --endpoint-url="${{ github.event.client_payload.endpoint }}"
 
+      - name: Install Ansible requirements
+        run: ansible-galaxy collection install -r requirements.yml
+
       # - name: Run Ansible playbook
-      #   run: |
-      #     ansible-galaxy collection install -r requirements.yml
-      #     ansible-playbook -i "${{ github.event.client_payload.inv-key }}" main.yml
+      #   run: ansible-playbook -i "${{ github.event.client_payload.inv-key }}" main.yml
