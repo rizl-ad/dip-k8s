@@ -57,7 +57,10 @@ jobs:
 
       - name: Show Ansible version
         run: ansible --version
-      
+
+      - name: Show Ansible config
+        run: ansible-config dump
+
       - name: Show files list
         run: ls -lha
 
