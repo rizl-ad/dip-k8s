@@ -58,11 +58,14 @@ jobs:
       - name: Show Ansible version
         run: ansible --version
 
-      - name: Show Ansible config
-        run: ansible-config dump
+      # - name: Show Ansible config
+      #   run: ansible-config dump
 
       - name: Show files list
         run: ls -lha
+
+      - name: Ansible host key checking off
+        run: export ANSIBLE_HOST_KEY_CHECKING=False
 
       - name: Run Ansible playbook
         run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml
