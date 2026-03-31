@@ -56,13 +56,13 @@ jobs:
           check_file () {
             local key="$1"
             aws s3api head-object \
-              --bucket "${{ fromJSON(vars.vars.YC_BUCKET).bucket }}" \
+              --bucket "${{ fromJSON(vars.YC_BUCKET).bucket }}" \
               --key "$key" \
-              --endpoint-url "${{ fromJSON(vars.vars.YC_BUCKET).endpoint }}" > /dev/null 2>&1 || \
+              --endpoint-url "${{ fromJSON(vars.YC_BUCKET).endpoint }}" > /dev/null 2>&1 || \
               { echo "File $key not found. Run the Terraform yc-infra project."; exit 1; }
           }
 
-          check_file "${{ fromJSON(vars.vars.YC_BUCKET).key }}"
+          check_file "${{ fromJSON(vars.YC_BUCKET).key }}"
           echo "The required files were found."
 
       # - name: Download inventory file
@@ -72,8 +72,8 @@ jobs:
 
       - name: Download inventory file
         run: |
-          aws s3 cp "s3://${{ fromJSON(vars.vars.YC_BUCKET).bucket }}/${{ fromJSON(vars.vars.YC_BUCKET).key }}" \
-            "${{ fromJSON(vars.vars.YC_BUCKET).key }}" --endpoint-url="${{ fromJSON(vars.vars.YC_BUCKET).endpoint }}"
+          aws s3 cp "s3://${{ fromJSON(vars.vars.YC_BUCKET).bucket }}/${{ fromJSON(vars.YC_BUCKET).key }}" \
+            "${{ fromJSON(vars.YC_BUCKET).key }}" --endpoint-url="${{ fromJSON(vars.YC_BUCKET).endpoint }}"
 
       - name: Install Ansible requirements
         run: ansible-galaxy collection install -r requirements.yml
