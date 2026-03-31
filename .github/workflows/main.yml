@@ -20,10 +20,8 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
-      YC_BUCKET: ${{ vars.YC_BUCKET }}
-      # ANSIBLE_SSH_ARGS: "-o ControlMaster=no -o ControlPersist=no"
-      # ANSIBLE_SSH_ARGS: "ssh_args = -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand=\"ssh -p 54231 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -W %h:%p rizl@178.154.222.12\""
+      # AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+      # YC_BUCKET: ${{ vars.YC_BUCKET }}
 
     steps:
       - name: Clone repository on runner
@@ -34,6 +32,31 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
           log-public-key: false
+
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            dip-yc
+            dip-k8s
+
+      - name: Read variables from dip-yc repository
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl/dip-yc")
+          VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl/dip-yc")
+          VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl/dip-yc")
+          VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl/dip-yc")
+          VAR_ANSIBLE_INVENTORY_KEY=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
+          echo "AWS_DEFAULT_REGION=$VAR_AWS_DEFAULT_REGION" >> $GITHUB_ENV
+          echo "YC_INFRA_BUCKET=$VAR_YC_INFRA_BUCKET" >> $GITHUB_ENV
+          echo "TF_BACKEND_S3=$VAR_TF_BACKEND_S3" >> $GITHUB_ENV
+          echo "ANSIBLE_INVENTORY_KEY=$VAR_ANSIBLE_INVENTORY_KEY" >> $GITHUB_ENV
 
       # - name: Check required files
       #   run: |
@@ -58,13 +81,13 @@ jobs:
           check_file () {
             local key="$1"
             aws s3api head-object \
-              --bucket "${{ fromJSON(vars.YC_BUCKET).bucket }}" \
+              --bucket "${{ fromJSON(env.YC_INFRA_BUCKET).name }}" \
               --key "$key" \
-              --endpoint-url "${{ fromJSON(vars.YC_BUCKET).endpoint }}" > /dev/null 2>&1 || \
+              --endpoint-url "$TF_BACKEND_S3" > /dev/null 2>&1 || \
               { echo "File $key not found. Run the Terraform yc-infra project."; exit 1; }
           }
 
-          check_file "${{ fromJSON(vars.YC_BUCKET).key }}"
+          check_file "$ANSIBLE_INVENTORY_KEY"
           echo "The required files were found."
 
       # - name: Download inventory file
@@ -74,35 +97,11 @@ jobs:
 
       - name: Download inventory file
         run: |
-          aws s3 cp "s3://${{ fromJSON(vars.YC_BUCKET).bucket }}/${{ fromJSON(vars.YC_BUCKET).key }}" \
-            "${{ fromJSON(vars.YC_BUCKET).key }}" --endpoint-url="${{ fromJSON(vars.YC_BUCKET).endpoint }}"
+          aws s3 cp "s3://${{ fromJSON(env.YC_INFRA_BUCKET).name }}/$ANSIBLE_INVENTORY_KEY" \
+            "$ANSIBLE_INVENTORY_KEY" --endpoint-url="$TF_BACKEND_S3"
 
       - name: Install Ansible requirements
         run: ansible-galaxy collection install -r requirements.yml
 
-      # - name: Show Ansible version
-      #   run: ansible --version
-
-      # - name: Show Ansible config
-      #   run: ansible-config dump
-
-      # - name: Show files list
-      #   run: ls -lha
-
-      # - name: Ansible host key checking off
-      #   run: export ANSIBLE_HOST_KEY_CHECKING=False
-
-      # - name: Create control socket directory
-      #   run: mkdir -p /home/runner/.ansible/cp
-
-      # - name: Run Ansible playbook
-      #   run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml -vvvv
-
-      # - name: Check ssh connect 1
-      #   run: ssh -o StrictHostKeyChecking=no -p 54231 rizl@130.193.36.190 '/bin/sh -c '"'"'echo ~rizl && sleep 0'"'"''
-
-      # - name: Check ssh connect 2
-      #   run: ssh -o StrictHostKeyChecking=no -J rizl@130.193.36.190:54231 rizl@10.10.22.8 '/bin/sh -c '"'"'echo ~rizl && sleep 0'"'"''
-
       - name: Run Ansible playbook
-        run: ansible-playbook -i "${{ fromJSON(vars.YC_BUCKET).key }}" main.yml -vvvv
+        run: ansible-playbook -i "$ANSIBLE_INVENTORY_KEY" main.yml
