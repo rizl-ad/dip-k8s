@@ -98,11 +98,11 @@ jobs:
       # - name: Run Ansible playbook
       #   run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml -vvvv
 
-      # - name: Check ssh connect 1
-      #   run: ssh -o StrictHostKeyChecking=no -p 54231 rizl@130.193.36.190 '/bin/sh -c '"'"'echo ~rizl && sleep 0'"'"''
+      - name: Check ssh connect 1
+        run: ssh -o StrictHostKeyChecking=no -p 54231 rizl@130.193.36.190 '/bin/sh -c '"'"'echo ~rizl && sleep 0'"'"''
 
       # - name: Check ssh connect 2
       #   run: ssh -o StrictHostKeyChecking=no -J rizl@130.193.36.190:54231 rizl@10.10.22.8 '/bin/sh -c '"'"'echo ~rizl && sleep 0'"'"''
 
       - name: Run Ansible playbook
-        run: ansible-playbook -i "${{ fromJSON(vars.YC_BUCKET).key }}" main.yml -vvvv
+        run: ansible-playbook -i "${{ fromJSON(vars.YC_BUCKET).key }}" main.yml
