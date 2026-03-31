@@ -23,7 +23,7 @@ jobs:
       AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
       YC_BUCKET: ${{ vars.YC_BUCKET }}
       # ANSIBLE_SSH_ARGS: "-o ControlMaster=no -o ControlPersist=no"
-      ANSIBLE_SSH_ARGS: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      ANSIBLE_SSH_ARGS: "ssh_args = -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand=\"ssh -p 54231 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -W %h:%p rizl@178.154.222.12\""
 
     steps:
       - name: Clone repository on runner
