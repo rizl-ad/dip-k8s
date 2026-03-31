@@ -22,7 +22,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
       YC_BUCKET: ${{ vars.YC_BUCKET }}
-      # ANSIBLE_SSH_ARGS: "-o ControlMaster=no -o ControlPersist=no"
+      ANSIBLE_SSH_ARGS: "-o ControlMaster=no -o ControlPersist=no"
 
     steps:
       - name: Clone repository on runner
@@ -90,8 +90,8 @@ jobs:
       # - name: Ansible host key checking off
       #   run: export ANSIBLE_HOST_KEY_CHECKING=False
 
-      - name: Create control socket directory
-        run: mkdir -p /home/runner/.ansible/cp
+      # - name: Create control socket directory
+      #   run: mkdir -p /home/runner/.ansible/cp
 
       - name: Run Ansible playbook
         run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml -vvvv
