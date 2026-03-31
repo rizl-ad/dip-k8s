@@ -55,8 +55,8 @@ jobs:
       - name: Install Ansible requirements
         run: ansible-galaxy collection install -r requirements.yml
 
-      - name: Show Ansible version
-        run: ansible --version
+      # - name: Show Ansible version
+      #   run: ansible --version
 
       # - name: Show Ansible config
       #   run: ansible-config dump
@@ -67,5 +67,9 @@ jobs:
       # - name: Ansible host key checking off
       #   run: export ANSIBLE_HOST_KEY_CHECKING=False
 
+      - name: Create control socket directory
+        run: mkdir -p /home/runner/.ansible/cp
+
       - name: Run Ansible playbook
         run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml -vvvv
+        
