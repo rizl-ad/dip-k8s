@@ -93,6 +93,9 @@ jobs:
       # - name: Create control socket directory
       #   run: mkdir -p /home/runner/.ansible/cp
 
+      # - name: Run Ansible playbook
+      #   run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml -vvvv
+      
       - name: Run Ansible playbook
-        run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml -vvvv
+        run: ansible-playbook -i "${{ fromJSON(vars.YC_BUCKET).key }}" main.yml -vvvv
         
