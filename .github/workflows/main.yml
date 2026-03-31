@@ -105,4 +105,4 @@ jobs:
       #   run: ssh -o StrictHostKeyChecking=no -J rizl@130.193.36.190:54231 rizl@10.10.22.8 '/bin/sh -c '"'"'echo ~rizl && sleep 0'"'"''
 
       - name: Run Ansible playbook
-        run: ansible-playbook -i "${{ fromJSON(vars.YC_BUCKET).key }}" main.yml
+        run: ansible-playbook -i "${{ fromJSON(vars.YC_BUCKET).key }}" main.yml -vvvv
