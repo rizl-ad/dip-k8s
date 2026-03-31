@@ -48,10 +48,10 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl/dip-yc")
-          VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl/dip-yc")
-          VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl/dip-yc")
-          VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl/dip-yc")
+          VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl-ad/dip-yc")
+          VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl-ad/dip-yc")
+          VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl-ad/dip-yc")
+          VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
           VAR_ANSIBLE_INVENTORY_KEY=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
           echo "AWS_DEFAULT_REGION=$VAR_AWS_DEFAULT_REGION" >> $GITHUB_ENV
           echo "YC_INFRA_BUCKET=$VAR_YC_INFRA_BUCKET" >> $GITHUB_ENV
