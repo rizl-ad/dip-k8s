@@ -21,6 +21,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+      YC_BUCKET: ${{ vars.YC_BUCKET }}
       # ANSIBLE_SSH_ARGS: "-o ControlMaster=no -o ControlPersist=no"
 
     steps:
@@ -32,6 +33,22 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
+      # - name: Check required files
+      #   run: |
+      #     set -euo pipefail
+
+      #     check_file () {
+      #       local key="$1"
+      #       aws s3api head-object \
+      #         --bucket "${{ github.event.client_payload.bucket }}" \
+      #         --key "$key" \
+      #         --endpoint-url "${{ github.event.client_payload.endpoint }}" > /dev/null 2>&1 || \
+      #         { echo "File $key not found. Run the Terraform yc-infra project."; exit 1; }
+      #     }
+
+      #     check_file "${{ github.event.client_payload.key }}"
+      #     echo "The required files were found."
+
       - name: Check required files
         run: |
           set -euo pipefail
@@ -39,19 +56,24 @@ jobs:
           check_file () {
             local key="$1"
             aws s3api head-object \
-              --bucket "${{ github.event.client_payload.bucket }}" \
+              --bucket "${{ fromJSON(vars.vars.YC_BUCKET).bucket }}" \
               --key "$key" \
-              --endpoint-url "${{ github.event.client_payload.endpoint }}" > /dev/null 2>&1 || \
+              --endpoint-url "${{ fromJSON(vars.vars.YC_BUCKET).endpoint }}" > /dev/null 2>&1 || \
               { echo "File $key not found. Run the Terraform yc-infra project."; exit 1; }
           }
 
-          check_file "${{ github.event.client_payload.key }}"
+          check_file "${{ fromJSON(vars.vars.YC_BUCKET).key }}"
           echo "The required files were found."
+
+      # - name: Download inventory file
+      #   run: |
+      #     aws s3 cp "s3://${{ github.event.client_payload.bucket }}/${{ github.event.client_payload.key }}" \
+      #       "${{ github.event.client_payload.key }}" --endpoint-url="${{ github.event.client_payload.endpoint }}"
 
       - name: Download inventory file
         run: |
-          aws s3 cp "s3://${{ github.event.client_payload.bucket }}/${{ github.event.client_payload.key }}" \
-            "${{ github.event.client_payload.key }}" --endpoint-url="${{ github.event.client_payload.endpoint }}"
+          aws s3 cp "s3://${{ fromJSON(vars.vars.YC_BUCKET).bucket }}/${{ fromJSON(vars.vars.YC_BUCKET).key }}" \
+            "${{ fromJSON(vars.vars.YC_BUCKET).key }}" --endpoint-url="${{ fromJSON(vars.vars.YC_BUCKET).endpoint }}"
 
       - name: Install Ansible requirements
         run: ansible-galaxy collection install -r requirements.yml
