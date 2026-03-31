@@ -72,7 +72,7 @@ jobs:
 
       - name: Download inventory file
         run: |
-          aws s3 cp "s3://${{ fromJSON(vars.vars.YC_BUCKET).bucket }}/${{ fromJSON(vars.YC_BUCKET).key }}" \
+          aws s3 cp "s3://${{ fromJSON(vars.YC_BUCKET).bucket }}/${{ fromJSON(vars.YC_BUCKET).key }}" \
             "${{ fromJSON(vars.YC_BUCKET).key }}" --endpoint-url="${{ fromJSON(vars.YC_BUCKET).endpoint }}"
 
       - name: Install Ansible requirements
