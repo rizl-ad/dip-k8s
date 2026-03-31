@@ -57,6 +57,9 @@ jobs:
 
       - name: Show Ansible version
         run: ansible --version
+      
+      - name: Show files list
+        run: ls -lha
 
       - name: Run Ansible playbook
         run: ansible-playbook -i "${{ github.event.client_payload.key }}" main.yml
