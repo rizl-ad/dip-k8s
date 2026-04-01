@@ -3,7 +3,7 @@
 - name: Install Calico CNI-plugin
   when: ansible_host == apiserver_advertise_address
   block:
-    - name: Install requirements (Debian/Ubuntu)
+    - name: Install required Python packages (Debian/Ubuntu)
       become: true
       ansible.builtin.apt:
         name:
@@ -16,7 +16,7 @@
       retries: 30
       delay: 20
 
-    - name: Install requirements (RedHat/Fedora)
+    - name: Install required Python modules (RedHat/Fedora)
       ansible.builtin.pip:
         name:
           - kubernetes
@@ -49,7 +49,7 @@
         state: present
         src: "{{ tigera_operator_url }}"
 
-    - name: Get custom-resources.yaml
+    - name: Get custom resources
       ansible.builtin.get_url:
         url: "{{ custom_resources_url }}"
         dest: "/tmp/custom-resources.yaml"
@@ -64,12 +64,12 @@
         - { regexp: 'cidr: 192\.168\.0\.0/16', replace: "cidr: {{ pod_network_cidr }}" }
         - { regexp: 'encapsulation: VXLANCrossSubnet', replace: 'encapsulation: {{ encapsulation }}' }
 
-    - name: Apply custom-resources.yaml
+    - name: Apply custom resources
       kubernetes.core.k8s:
         state: present
         src: "/tmp/custom-resources.yaml"
 
-    - name: Wait Calico pods run
+    - name: Wait for Calico pods to run
       kubernetes.core.k8s_info:
         kind: Pod
         namespace: calico-system

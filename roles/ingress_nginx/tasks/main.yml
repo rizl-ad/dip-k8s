@@ -15,7 +15,7 @@
         update_cache: true
       when: ansible_pkg_mgr == 'dnf'
 
-    - name: Install requirements (Debian/Ubuntu)
+    - name: Install required Python packages (Debian/Ubuntu)
       become: true
       ansible.builtin.apt:
         name:
@@ -28,7 +28,7 @@
       retries: 30
       delay: 20
 
-    - name: Install requirements (RedHat/Fedora)
+    - name: Install required Python modules (RedHat/Fedora)
       ansible.builtin.pip:
         name:
           - kubernetes

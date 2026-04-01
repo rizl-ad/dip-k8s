@@ -1,6 +1,6 @@
 ---
 # tasks file for k8s_master
-- name: Check init Kubernetes cluster
+- name: Check Kubernetes cluster initialization
   become: true
   ansible.builtin.stat:
     path: /etc/kubernetes/admin.conf
@@ -17,25 +17,25 @@
       ansible.builtin.command: kubeadm token create --print-join-command
       register: join_worker
 
-    - name: Get join command for control-plane nodes
+    - name: Get join command for master-nodes
       become: true
       ansible.builtin.shell: kubeadm init phase upload-certs --upload-certs | tail -1
       register: cert_key
 
-    - name: Publish join cmd and first master name
+    - name: Publish join command and first master name
       ansible.builtin.add_host:
         name: "K8s_data"
         main_master_name: "{{ inventory_hostname }}"
         join_worker_cmd: "{{ join_worker.stdout }}"
         join_master_cmd: "{{ join_worker.stdout }} --control-plane --certificate-key {{ cert_key.stdout }}"
 
-- name: Init first Kubernetes cluster master
+- name: Init Kubernetes cluster
   when:
     - not check_init_kubeadm.stat.exists
     - ansible_host == apiserver_advertise_address
     - "'K8s_data' not in hostvars"
   block:
-    - name: Kubeadm first master init
+    - name: Kubeadm init on first master
       block:
         - name: Kubeadm init
           become: true
@@ -54,7 +54,7 @@
             sudo kubeadm reset -f
             sudo rm -rf /etc/cni/net.d
 
-    - name: Preparation k8s
+    - name: Prepare Kubernetes
       when: kubeadm_init_result.rc == 0
       block:
         - name: Create .kube directory
@@ -80,19 +80,19 @@
           ansible.builtin.command: kubeadm token create --print-join-command
           register: join_worker
 
-        - name: Get join command for control-plane nodes
+        - name: Get join command for master-nodes
           become: true
           ansible.builtin.shell: kubeadm init phase upload-certs --upload-certs | tail -1
           register: cert_key
 
-        - name: Publish join cmd and first master name
+        - name: Publish join command and first master name
           ansible.builtin.add_host:
             name: "K8s_data"
             main_master_name: "{{ inventory_hostname }}"
             join_worker_cmd: "{{ join_worker.stdout }}"
             join_master_cmd: "{{ join_worker.stdout }} --control-plane --certificate-key {{ cert_key.stdout }}"
 
-- name: Join Kubernetes cluster master
+- name: Join master-node to Kubernetes cluster
   become: true
   ansible.builtin.shell: "{{ hostvars['K8s_data']['join_master_cmd'] }}"
   when:

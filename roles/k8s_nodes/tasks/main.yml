@@ -12,12 +12,6 @@
     fstype: swap
     state: absent
 
-# - name: Delete swapfile
-#   become: true
-#   ansible.builtin.file:
-#     path: /swapfile
-#     state: absent
-
 - name: Enable IP forwarding
   become: true
   ansible.posix.sysctl:
