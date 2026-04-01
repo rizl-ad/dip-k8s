@@ -56,7 +56,7 @@
 - name: Kubernetes GPG-key (Debian/Ubuntu)
   when: ansible_os_family == "Debian"
   block:
-    - name: Install containerd and required packages
+    - name: Install apt-transport-https
       become: true
       ansible.builtin.package:
         name: apt-transport-https
