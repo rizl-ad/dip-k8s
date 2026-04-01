@@ -16,19 +16,34 @@
   roles:
     - k8s_nodes
 
-- name: Deploy K8s master
-  hosts: k8s_master
-  roles:
-    - k8s_master
-    - calico
+    - role: k8s_master
+      when: "'k8s_master' in group_names"
 
-- name: Deploy K8s worker
-  hosts: k8s_worker
-  roles:
-    - k8s_worker
+    - role: calico
+      when: "'k8s_master' in group_names"
 
-- name: Deploy ingress-nginx controller
-  hosts: k8s_master
-  roles:
-    - ingress_nginx
-    - kube_prometheus
+    - role: k8s_worker
+      when: "'k8s_worker' in group_names"
+
+    - role: ingress_nginx
+      when: "'k8s_master' in group_names"
+
+    - role: kube_prometheus
+      when: "'k8s_master' in group_names"
+
+# - name: Deploy K8s master
+#   hosts: k8s_master
+#   roles:
+#     - k8s_master
+#     - calico
+
+# - name: Deploy K8s worker
+#   hosts: k8s_worker
+#   roles:
+#     - k8s_worker
+
+# - name: Deploy ingress-nginx controller
+#   hosts: k8s_master
+#   roles:
+#     - ingress_nginx
+#     - kube_prometheus
