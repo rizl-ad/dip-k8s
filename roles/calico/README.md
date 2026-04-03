@@ -1,7 +1,7 @@
 calico
 ======
 
-This role is designed to install the Calico CNI plugin for a self-managed Kubernetes cluster. This role also includes dependency installation.
+This role is designed to install the Calico CNI plugin for a self-managed Kubernetes cluster.
 
 Requirements
 ------------

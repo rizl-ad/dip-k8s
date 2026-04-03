@@ -1,0 +1,11 @@
+---
+# defaults file for gha_arc
+app_namespace:
+gha_arc_namespace: gha-arc-system
+gha_runners_namespace: gha-arc-runners
+gha_arc_secret_name: gha-arc-secret
+gha_runner_set_name: gha-arc-runner-set
+github_config_url:
+gha_arc_sa_name: gha-arc-runner-sa
+gha_arc_deploer_role_name: gha-arc-runner-deploer-role
+gha_arc_mgmt_role_name: gha-arc-runner-mgmt-role

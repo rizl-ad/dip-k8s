@@ -1,0 +1,4 @@
+---
+# defaults file for helm
+helm_deb_repo_url: "https://packages.buildkite.com/helm-linux/helm-debian/any/ any main"
+helm_deb_gpg_key_url: "https://packages.buildkite.com/helm-linux/helm-debian/gpgkey"

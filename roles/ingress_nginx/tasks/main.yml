@@ -3,43 +3,6 @@
 - name: Ingress-nginx controller
   when: ansible_host == apiserver_advertise_address
   block:
-    - name: Update apt cache
-      become: true
-      ansible.builtin.apt:
-        update_cache: true
-      when: ansible_pkg_mgr == 'apt'
-
-    - name: Update dnf cache
-      become: true
-      ansible.builtin.dnf:
-        update_cache: true
-      when: ansible_pkg_mgr == 'dnf'
-
-    - name: Install required Python packages (Debian/Ubuntu)
-      become: true
-      ansible.builtin.apt:
-        name:
-          - python3-kubernetes
-          - python3-yaml
-        state: present
-      when: ansible_os_family == "Debian"
-      register: requirements_package_install_result
-      until: requirements_package_install_result is success
-      retries: 30
-      delay: 20
-
-    - name: Install required Python modules (RedHat/Fedora)
-      ansible.builtin.pip:
-        name:
-          - kubernetes
-          - PyYAML
-        state: present
-      when: ansible_os_family == "RedHat"
-      register: requirements_package_install_result
-      until: requirements_package_install_result is success
-      retries: 30
-      delay: 20
-
     - name: Get k8s node list
       kubernetes.core.k8s_info:
         kind: Node
@@ -67,91 +30,26 @@
               list | length > 0
             )
       block:
-        - name: Install required packages
-          become: true
-          ansible.builtin.package:
-            name:
-              - curl
-              - gpg
-            state: present
-          register: packages_install_result
-          until: packages_install_result is success
-          retries: 30
-          delay: 20
-
-        - name: Helm GPG-key (Debian/Ubuntu)
-          when: ansible_os_family == "Debian"
-          block:
-            - name: Install apt-transport-https
-              become: true
-              ansible.builtin.package:
-                name: apt-transport-https
-                state: present
-              register: packages_install_result
-              until: packages_install_result is success
-              retries: 30
-              delay: 20
-
-            - name: Create /etc/apt/keyrings directory
-              become: true
-              ansible.builtin.file:
-                path: /etc/apt/keyrings
-                state: directory
-                owner: root
-                group: root
-                mode: "0755"
-
-            - name: Get Helm GPG-key
-              become: true
-              ansible.builtin.get_url:
-                url: "{{ helm_deb_gpg_key_url }}"
-                dest: /tmp/helm-gpgkey
-                mode: '0644'
-
-            - name: Create binary Helm GPG-key
-              become: true
-              ansible.builtin.command:
-                cmd: gpg --dearmor -o /etc/apt/keyrings/helm.gpg /tmp/helm-gpgkey
-                creates: /etc/apt/keyrings/helm.gpg
-
-            - name: Add Helm repository
-              become: true
-              ansible.builtin.apt_repository:
-                repo: "deb [signed-by=/etc/apt/keyrings/helm.gpg] {{ helm_deb_repo_url }}"
-                filename: helm-stable-debian
-                state: present
-                update_cache: true
-
-        - name: Install Helm
-          become: true
-          ansible.builtin.package:
-            name: helm
-            state: present
-          register: helm_install_result
-          until: helm_install_result is success
-          retries: 30
-          delay: 20
-
         - name: Add ingress-nginx repository
           kubernetes.core.helm_repository:
             name: ingress-nginx
             repo_url: "https://kubernetes.github.io/ingress-nginx"
 
-    - name: Install ingress-nginx
-      kubernetes.core.helm:
-        name: ingress-nginx
-        chart_ref: ingress-nginx/ingress-nginx
-        release_namespace: ingress-nginx
-        create_namespace: true
-        wait: true
-        values:
-          controller:
-            kind: DaemonSet
-            service:
-              type: NodePort
-              nodePorts:
-                http: "{{ http_node_port }}"
-            ingressClassResource:
-              name: nginx
-              enabled: true
-              default: true
+        - name: Install ingress-nginx
+          kubernetes.core.helm:
+            name: ingress-nginx
+            chart_ref: ingress-nginx/ingress-nginx
+            release_namespace: ingress-nginx
+            create_namespace: true
+            wait: true
+            values:
+              controller:
+                kind: DaemonSet
+                service:
+                  type: NodePort
+                  nodePorts:
+                    http: "{{ http_node_port }}"
+                ingressClassResource:
+                  name: nginx
+                  enabled: true
+                  default: true

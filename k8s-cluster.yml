@@ -5,7 +5,7 @@
   tasks:
     - name: Check SSH availability
       ansible.builtin.wait_for_connection:
-        delay: 10
+        delay: 5
         timeout: 300
 
     - name: Gather facts
