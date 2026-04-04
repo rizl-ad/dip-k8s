@@ -13,16 +13,22 @@
     - ansible_host == apiserver_advertise_address
   block:
     - name: Get join command for worker-nodes
+      no_log: true
+      diff: false
       become: true
       ansible.builtin.command: kubeadm token create --print-join-command
       register: join_worker
 
     - name: Get join command for master-nodes
+      no_log: true
+      diff: false
       become: true
       ansible.builtin.shell: kubeadm init phase upload-certs --upload-certs | tail -1
       register: cert_key
 
     - name: Publish join command and first master name
+      no_log: true
+      diff: false
       ansible.builtin.add_host:
         name: "K8s_data"
         main_master_name: "{{ inventory_hostname }}"
@@ -39,6 +45,8 @@
       block:
         - name: Kubeadm init
           become: true
+          no_log: true
+          diff: false
           ansible.builtin.command: >
             sudo kubeadm init
             --apiserver-advertise-address={{ apiserver_advertise_address }}
@@ -67,6 +75,8 @@
 
         - name: Copy admin.conf to .kube/config
           become: true
+          no_log: true
+          diff: false
           ansible.builtin.copy:
             src: /etc/kubernetes/admin.conf
             dest: "{{ ansible_env.HOME }}/.kube/config"
@@ -77,15 +87,21 @@
 
         - name: Get join command for worker-nodes
           become: true
+          no_log: true
+          diff: false
           ansible.builtin.command: kubeadm token create --print-join-command
           register: join_worker
 
         - name: Get join command for master-nodes
           become: true
+          no_log: true
+          diff: false
           ansible.builtin.shell: kubeadm init phase upload-certs --upload-certs | tail -1
           register: cert_key
 
         - name: Publish join command and first master name
+          no_log: true
+          diff: false
           ansible.builtin.add_host:
             name: "K8s_data"
             main_master_name: "{{ inventory_hostname }}"
@@ -94,6 +110,8 @@
 
 - name: Join master-node to Kubernetes cluster
   become: true
+  no_log: true
+  diff: false
   ansible.builtin.shell: "{{ hostvars['K8s_data']['join_master_cmd'] }}"
   when:
     - not check_init_kubeadm.stat.exists

@@ -25,6 +25,8 @@
         - "{{ app_namespace }}"
 
     - name: Create secret for GitHub App
+      no_log: true
+      diff: false
       kubernetes.core.k8s:
         state: present
         definition:

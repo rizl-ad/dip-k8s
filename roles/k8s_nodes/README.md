@@ -13,7 +13,7 @@ Role Variables
 
 | variable | default value | description |
 | -------- | ------------- | ----------- |
-| `k8s_version` |  | Installable version of kubelet, kubeadm, kubectl |
+| `k8s_version` | "{{ lookup('env', 'K8S_VERSION') }}" | Installable version of kubelet, kubeadm, kubectl |
 | `k8s_deb_baseurl` | "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/" | Link to the k8s repository for systems using a package manager to work with .deb files |
 | `k8s_deb_gpg_key_url` | "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key" | Link to the k8s repository gpg-key for systems using a package manager to work with .deb files |
 | `k8s_rpm_baseurl` | "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/" | Link to the k8s repository for systems using a package manager to work with .rpm files |

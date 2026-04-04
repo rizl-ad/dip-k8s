@@ -1,38 +1,71 @@
-Role Name
-=========
+ycr_secret
+==========
 
-A brief description of the role goes here.
+This role creates a secret for accessing the Yandex Cloud image registry.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Requires Ansible modules:
+- kubernetes.core
+
+Requires installed packages:
+- kubernetes (python3-kubernetes)
+- PyYAML (python3-yaml)
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+| variable | default value | description |
+| -------- | ------------- | ----------- |
+| `app_namespace` | "{{ lookup('env', 'APP_NAMESPACE') }}" | The name of the namespace into which applications should be deployed. |
+| `sa_key_file_path` | "{{ lookup('env', 'YC_INFRA_SA_KEY_FILE_PATH') }}" | Path to the file containing the Yandex Cloud service account key |
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+Ansible roles:
+- k8s_nodes
+- k8s_master
+- k8s_worker
+- helm
+- calico
+- gha_arc
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+```yaml
+- name: Play 1 name
+  hosts: k8s_servers_group
+  roles:
+    - k8s_nodes
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+- name: Play 2 name
+  hosts: master_nodes_group
+  roles:
+    - k8s_master
+    - helm
+    - calico
+
+- name: Play 3 name
+  hosts: worker_nodes_group
+  roles:
+    - k8s_worker
+
+- name: Play 4 name
+  hosts: master_nodes_group
+  roles:
+    - gha_arc
+    - ycr_secret
+```
 
 License
 -------
 
-BSD
+MIT
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Yaroslav Lysenko (rizl)

@@ -19,7 +19,7 @@ Role Variables
 
 | variable | default value | description |
 | -------- | ------------- | ----------- |
-| `app_namespace` |  | The name of the namespace into which applications should be deployed. |
+| `app_namespace` | "{{ lookup('env', 'APP_NAMESPACE') }}" | The name of the namespace into which applications should be deployed. |
 | `gha_arc_namespace` | gha-arc-system | The name of the namespace in which the ARC controller is installed. |
 | `gha_runners_namespace` | gha-arc-runners | The name of the namespace in which GitHub Action Runners should be run. |
 | `gha_arc_secret_name` | gha-arc-secret | The name of the secret associated with the GitHub App |
@@ -28,6 +28,9 @@ Role Variables
 | `gha_arc_sa_name` | gha-arc-runner-sa | GitHub ARC service account name. |
 | `gha_arc_deploer_role_name` | gha-arc-runner-deploer-role | The name of the role assigned to the GitHub ARC service account for deploying applications. |
 | `gha_arc_mgmt_role_name` | gha-arc-runner-mgmt-role | The name of the role assigned to the GitHub ARC service account to manage ephemeral workflow pods. |
+| `github_app_id` | "{{ lookup('env', 'APP_ID') }}" | Unique identifier of your GitHub App |
+| `github_app_installation_id` | "{{ lookup('env', 'APP_INSTALLATION_ID') }}" | This is the ID of a specific installation of the application per account, organization, or repository. |
+| `github_app_private_key` | "{{ lookup('env', 'APP_PRIVATE_KEY') }}" | This is the content of your GitHub App private key. |
 
 Dependencies
 ------------
@@ -69,9 +72,9 @@ Example Playbook
 License
 -------
 
-BSD
+MIT
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Yaroslav Lysenko (rizl)

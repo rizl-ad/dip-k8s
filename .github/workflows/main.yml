@@ -18,9 +18,11 @@ jobs:
     runs-on: ubuntu-24.04
 
     outputs:
-      ansible_inventory_path: ${{ steps.yc_vars.outputs.ANSIBLE_INVENTORY_PATH }}
-      tf_backend_s3: ${{ steps.yc_vars.outputs.TF_BACKEND_S3 }}
-      yc_infra_bucket_name: ${{ steps.yc_vars.outputs.YC_INFRA_BUCKET_NAME }}
+      app_namespace: ${{ steps.repos_vars.outputs.APP_NAMESPACE }}
+      ansible_inventory_path: ${{ steps.repos_vars.outputs.ANSIBLE_INVENTORY_PATH }}
+      tf_backend_s3: ${{ steps.repos_vars.outputs.TF_BACKEND_S3 }}
+      yc_infra_bucket_name: ${{ steps.repos_vars.outputs.YC_INFRA_BUCKET_NAME }}
+      yc_infra_sa_key_file_path: ${{ steps.repos_vars.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
 
     environment: code_review
 
@@ -45,14 +47,14 @@ jobs:
             dip-yc
             dip-k8s
 
-      # VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl-ad/dip-yc")
-      # echo "AWS_DEFAULT_REGION=$VAR_AWS_DEFAULT_REGION" >> $GITHUB_ENV
-
       - name: Read variables from dip-yc repository
-        id: yc_vars
+        id: repos_vars
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          VAR_APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")
+          echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_ENV
+
           VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
           VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
           echo "ANSIBLE_INVENTORY_PATH=$VAR_ANSIBLE_INVENTORY_PATH" >> $GITHUB_ENV
@@ -63,6 +65,13 @@ jobs:
           VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl-ad/dip-yc")
           VAR_YC_INFRA_BUCKET_NAME=$(echo "$VAR_YC_INFRA_BUCKET" | jq -r .name)
           echo "YC_INFRA_BUCKET_NAME="$VAR_YC_INFRA_BUCKET_NAME" >> $GITHUB_ENV
+
+          VAR_YC_INFRA_SA_KEY_FILE=$(gh variable get YC_INFRA_SA_KEY_FILE --repo "rizl-ad/dip-yc")
+          VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_CONTAINER_REGISTRY" | jq -r '.dir_path + "/" + .name')
+          echo "YC_INFRA_SA_KEY_FILE_PATH=$VAR_YC_INFRA_SA_KEY_FILE_PATH" >> $GITHUB_ENV
+
+      # VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl-ad/dip-yc")
+      # echo "AWS_DEFAULT_REGION=$VAR_AWS_DEFAULT_REGION" >> $GITHUB_ENV
 
       - name: Check required files
         env:
@@ -95,9 +104,10 @@ jobs:
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run Ansible playbook
+        env:
+          K8S_VERSION: ${{ vars.K8S_VERSION }}
         run: |
-          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml \
-            -e "k8s_version=${{ vars.K8S_VERSION }}"
+          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml
 
   gha-arc:
     name: Run gha-arc Ansible playbook
@@ -107,8 +117,6 @@ jobs:
 
     env:
       ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
-      TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
-      YC_INFRA_BUCKET_NAME: ${{ fromJSON(needs.k8s-cluster.outputs.yc_infra_bucket_name).name }}
 
     steps:
       - name: Clone repository on runner
@@ -124,6 +132,8 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
+          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
         run: |
           aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" \
             "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
@@ -133,14 +143,70 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          APP_NAMESPACE: ${{ vars.APP_NAMESPACE }}
+          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.app_namespace }}
           APP_ID: ${{ secrets.YC_K8S_ARC_APP_ID }}
           APP_INSTALLATION_ID: ${{ secrets.YC_K8S_ARC_APP_INSTALLATION_ID }}
           APP_PRIVATE_KEY: ${{ secrets.YC_K8S_ARC_APP_PRIVATE_KEY }}
+          GITHUB_CONFIG_URL: "https://github.com/rizl-ad/dip-app"
         run: |
-          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml \
-            -e "app_namespace=$APP_NAMESPACE"
-            -e "github_app_id=$APP_ID" \
-            -e "github_app_installation_id=$APP_INSTALLATION_ID" \
-            -e "github_app_private_key=$APP_PRIVATE_KEY" \
-            -e "github_config_url=https://github.com/rizl-ad/dip-app"
+          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
+  
+  ycr-secret:
+    name: Run ycr-secret Ansible playbook
+    needs: gha-arc
+    if: needs.gha-arc.result == 'success'
+    runs-on: ubuntu-24.04
+
+    env:
+      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
+      YC_INFRA_SA_KEY_FILE_PATH: ${{ needs.k8s-cluster.outputs.yc_infra_sa_key_file_path }}
+      TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
+      YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
+
+    steps:
+      - name: Clone repository on runner
+        uses: actions/checkout@v6
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+          log-public-key: false
+      
+      - name: Check required files
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+
+          check_file () {
+            local key="$1"
+            aws s3api head-object \
+              --bucket "$YC_INFRA_BUCKET_NAME" \
+              --key "$key" \
+              --endpoint-url "$TF_BACKEND_S3" > /dev/null 2>&1 || \
+              { echo "File $key not found. Run the Terraform yc-prep project."; exit 1; }
+          }
+
+          check_file "$YC_INFRA_SA_KEY_FILE_PATH"
+          echo "The required files were found."
+
+      - name: Download inventory file
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" \
+            "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
+          aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$YC_INFRA_SA_KEY_FILE_PATH" \
+            "$YC_INFRA_SA_KEY_FILE_PATH" --endpoint-url="$TF_BACKEND_S3"
+
+      - name: Install Ansible requirements
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run Ansible playbook
+        env:
+          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.app_namespace }}
+        run: |
+          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
