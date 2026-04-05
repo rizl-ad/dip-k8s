@@ -233,9 +233,7 @@ jobs:
           app-id: ${{ secrets.SET_SECRET_APP_ID }}
           private-key: ${{ secrets.SET_SECRET_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: |
-            dip-yc
-            dip-app
+          repositories: dip-app
 
       - name: Read variables from dip_app repo
         # id: dip_app_vars
@@ -321,9 +319,7 @@ jobs:
           app-id: ${{ secrets.SET_SECRET_APP_ID }}
           private-key: ${{ secrets.SET_SECRET_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: |
-            dip-yc
-            dip-app
+          repositories: dip-app
 
       - name: Read variables from dip_app repo
         # id: dip_app_vars
