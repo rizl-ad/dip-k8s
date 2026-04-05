@@ -14,6 +14,12 @@
       delay: 10
       ignore_errors: false
 
+    - name: Create namespaces
+      kubernetes.core.k8s:
+        kind: Namespace
+        name: "{{ app_namespace }}"
+        state: present
+
     - name: Create imagePullSecret
       no_log: true
       diff: false

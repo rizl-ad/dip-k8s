@@ -16,12 +16,11 @@
 
     - name: Create namespaces
       kubernetes.core.k8s:
-        name: "{{ item }}"
         kind: Namespace
+        name: "{{ item }}"
         state: present
       loop:
         - "{{ gha_arc_namespace }}"
-        # - "{{ gha_runners_namespace }}"
         - "{{ app_namespace }}"
 
     - name: Create secret for GitHub App
@@ -59,90 +58,9 @@
           maxRunners: 5
           containerMode:
             type: dind
-          # controllerServiceAccount:
-          #   name: "{{ gha_arc_sa_name }}"
-          #   namespace: "{{ gha_arc_namespace }}"
-          # template:
-          #   spec:
-          #     serviceAccountName: "{{ gha_arc_sa_name }}"
-          #     containers:
-          #       - name: runner
-          #         image: ghcr.io/actions/actions-runner-controller-charts/actions-runner:latest
-          #         command: ["/home/runner/run.sh"]
-          #         env:
-          #           - name: DOCKER_HOST
-          #             value: tcp://localhost:2375
-          #       - name: dind
-          #         image: docker:dind
-          #         securityContext:
-          #           privileged: true
-          #         env:
-          #           - name: DOCKER_TLS_CERTDIR
-          #             value: ""
         wait: true
 
-    # - name: Get controller ServiceAccount name
-    #   kubernetes.core.k8s_info:
-    #     kind: ServiceAccount
-    #     namespace: "{{ gha_arc_namespace }}"
-    #     label_selectors:
-    #       - "app.kubernetes.io/name=gha-rs-controller"
-    #   register: controller_sa_list
-
-    # - name: Get runner ServiceAccount name
-    #   kubernetes.core.k8s_info:
-    #     kind: ServiceAccount
-    #     namespace: "{{ gha_runners_namespace }}"
-    #     label_selectors:
-    #       - "app.kubernetes.io/name=gha-arc-runner-set"
-    #   register: runner_sa_list
-
-    # Права на управление эфемерными подами в namespace gha-arc-runners
-    # - name: Create role for ARC management
-    #   kubernetes.core.k8s:
-    #     state: present
-    #     definition:
-    #       apiVersion: rbac.authorization.k8s.io/v1
-    #       kind: Role
-    #       metadata:
-    #         name: "{{ gha_arc_mgmt_role_name }}"
-    #         namespace: "{{ gha_runners_namespace }}"
-    #       rules:
-    #         - apiGroups: [""]
-    #           resources: ["pods", "pods/exec", "pods/log", "pods/status", "secrets"]
-    #           verbs: ["get", "list", "watch", "create", "delete", "patch"]
-    #         # - apiGroups: [""]
-    #         #   resources: ["pods", "pods/exec", "pods/log", "pods/status"]
-    #         #   verbs: ["get", "list", "watch", "create", "delete", "patch"]
-    #         # - apiGroups: ["batch"]
-    #         #   resources: ["jobs"]
-    #         #   verbs: ["get", "list", "watch", "create", "delete", "patch"]
-    #         # - apiGroups: [""]
-    #         #   resources: ["secrets"]
-    #         #   verbs: ["get", "list", "watch"]
-
-    # - name: Bind management role to ARC Controller ServiceAccount
-    #   when: controller_sa_list.resources | length > 0
-    #   kubernetes.core.k8s:
-    #     state: present
-    #     definition:
-    #       apiVersion: rbac.authorization.k8s.io/v1
-    #       kind: RoleBinding
-    #       metadata:
-    #         name: gha-arc-controller-rb
-    #         namespace: "{{ gha_runners_namespace }}"
-    #       subjects:
-    #         - kind: ServiceAccount
-    #           name: "{{ controller_sa_list.resources[0].metadata.name }}"
-    #           # name: "{{ gha_arc_sa_name }}"
-    #           # namespace: "{{ gha_runners_namespace }}"
-    #           namespace: "{{ gha_arc_namespace }}"
-    #       roleRef:
-    #         kind: Role
-    #         name: "{{ gha_arc_mgmt_role_name }}"
-    #         apiGroup: rbac.authorization.k8s.io
-
-    # Права для деплоя через Helm в namespace app
+    # Права для деплоя в namespace app
     - name: Create role for app deployment
       kubernetes.core.k8s:
         state: present
@@ -169,7 +87,6 @@
           subjects:
             - kind: ServiceAccount
               name: "{{ gha_runner_set_name }}"
-              # name: "{{ gha_arc_sa_name }}"
               namespace: "{{ gha_arc_namespace }}"
           roleRef:
             kind: Role

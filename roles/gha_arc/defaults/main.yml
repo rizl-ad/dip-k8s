@@ -2,13 +2,10 @@
 # defaults file for gha_arc
 app_namespace: "{{ lookup('env', 'APP_NAMESPACE') }}"
 gha_arc_namespace: gha-arc
-# gha_runners_namespace: gha-arc-runners
 gha_arc_secret_name: gha-arc-secret
 gha_runner_set_name: gha-arc-runner-set
 github_config_url: "{{ lookup('env', 'GITHUB_CONFIG_URL') }}"
-# gha_arc_sa_name: gha-arc-runner-sa
 gha_arc_deploer_role_name: gha-arc-runner-deploer-role
-# gha_arc_mgmt_role_name: gha-arc-runner-mgmt-role
 github_app_id: "{{ lookup('env', 'APP_ID') }}"
 github_app_installation_id: "{{ lookup('env', 'APP_INSTALLATION_ID') }}"
 github_app_private_key: "{{ lookup('env', 'APP_PRIVATE_KEY') }}"

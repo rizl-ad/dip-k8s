@@ -6,23 +6,23 @@ on:
   workflow_dispatch:
     inputs:
       run_k8s_cluster:
-        description: 'Enter "YES" to run k8s_cluster job'
+        description: Enter "YES" to run k8s_cluster job
         required: true
         default: 'no'
       run_monitoring:
-        description: 'Enter "YES" to run monitoring job'
+        description: Enter "YES" to run monitoring job
         required: true
         default: 'no'
       run_gha_arc:
-        description: 'Enter "YES" to run gha_arc job'
+        description: Enter "YES" to run gha_arc job
         required: true
         default: 'no'
       run_ycr_secret:
-        description: 'Enter "YES" to run ycr_secret job'
+        description: Enter "YES" to run ycr_secret job
         required: true
         default: 'no'
       run_app:
-        description: 'Enter "YES" to run app job'
+        description: Enter "YES" to run app job
         required: true
         default: 'no'
   repository_dispatch:
@@ -33,20 +33,41 @@ permissions:
   pull-requests: write
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      calico: ${{ steps.filter.outputs.calico }}
+      gha-arc: ${{ steps.filter.outputs.gha-arc }}
+      k8s: ${{ steps.filter.outputs.k8s }}
+      monitoring: ${{ steps.filter.outputs.monitoring }}
+      ycr: ${{ steps.filter.outputs.ycr }}
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            calico:
+              - 'roles/calico/**'
+            gha-arc:
+              - 'roles/gha_arc/**'
+            k8s:
+              - 'roles/k8s*/**'
+              - 'roles/helm*/**'
+              - 'roles/ingress_nginx*/**'
+            monitoring:
+              - 'roles/kube_prometheus/**'
+            ycr:
+              - 'roles/ycr_secret/**'
 
   k8s-cluster:
     name: Run k8s-cluster Ansible playbook
+    needs: detect-changes
     if: |
       (github.event_name == 'workflow_dispatch' && github.event.inputs.run_k8s_cluster == 'YES') ||
-      (github.event_name != 'workflow_dispatch')
+      (github.event_name == 'pull_request' && needs.detect-changes.outputs.k8s == 'true')
     runs-on: ubuntu-24.04
-
-    # outputs:
-    #   app_namespace: ${{ steps.repos_vars.outputs.APP_NAMESPACE }}
-    #   ansible_inventory_path: ${{ steps.repos_vars.outputs.ANSIBLE_INVENTORY_PATH }}
-    #   tf_backend_s3: ${{ steps.repos_vars.outputs.TF_BACKEND_S3 }}
-    #   yc_infra_bucket_name: ${{ steps.repos_vars.outputs.YC_INFRA_BUCKET_NAME }}
-    #   yc_infra_sa_key_file_path: ${{ steps.repos_vars.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
     
     environment: code_review
 
@@ -59,41 +80,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
           log-public-key: false
-
-      # - name: Generate token
-      #   id: dip_app_vars_token
-      #   uses: actions/create-github-app-token@v3
-      #   with:
-      #     app-id: ${{ secrets.SET_SECRET_APP_ID }}
-      #     private-key: ${{ secrets.SET_SECRET_APP_PRIVATE_KEY }}
-      #     owner: ${{ github.repository_owner }}
-      #     repositories: dip-app
-
-      # - name: Read variables from repositories
-      #   id: dip_app_vars
-      #   env:
-      #     GH_TOKEN: ${{ steps.dip_app_vars_token.outputs.token }}
-      #   run: |
-      #     VAR_APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")
-      #     echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_ENV
-
-      # VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
-      # VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
-      # { echo "ANSIBLE_INVENTORY_PATH<<EOF"; echo "$VAR_ANSIBLE_INVENTORY_PATH"; echo "EOF"; } >> $GITHUB_ENV
-
-      # VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl-ad/dip-yc")
-      # echo "TF_BACKEND_S3=$VAR_TF_BACKEND_S3" >> $GITHUB_ENV
-
-      # VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl-ad/dip-yc")
-      # VAR_YC_INFRA_BUCKET_NAME=$(echo "$VAR_YC_INFRA_BUCKET" | jq -r .name)
-      # { echo "YC_INFRA_BUCKET_NAME<<EOF"; echo "$VAR_YC_INFRA_BUCKET_NAME"; echo "EOF"; } >> $GITHUB_ENV
-
-      # VAR_YC_INFRA_SA_KEY_FILE=$(gh variable get YC_INFRA_SA_KEY_FILE --repo "rizl-ad/dip-yc")
-      # VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_YC_INFRA_SA_KEY_FILE" | jq -r '.dir_path + "/" + .name')
-      # { echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"; echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"; echo "EOF"; } >> $GITHUB_ENV
-
-      # VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl-ad/dip-yc")
-      # echo "AWS_DEFAULT_REGION=$VAR_AWS_DEFAULT_REGION" >> $GITHUB_ENV
 
       - name: Check required files
         env:
@@ -139,11 +125,13 @@ jobs:
 
   monitoring:
     name: Run monitoring Ansible playbook
-    needs: k8s-cluster
+    needs: [ detect-changes, k8s-cluster ]
     if: |
-      always() && (
+      always() && needs.detect-changes.result == 'success' &&
+      (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
+      (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_monitoring == 'YES') ||
-        (github.event_name != 'workflow_dispatch' && needs.k8s-cluster.result == 'success')
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.monitoring == 'true')
       )
     runs-on: ubuntu-24.04
 
@@ -203,16 +191,15 @@ jobs:
   
   gha-arc:
     name: Run gha-arc Ansible playbook
-    needs: k8s-cluster
+    needs: [ detect-changes, k8s-cluster ]
     if: |
-      always() && (
+      always() && needs.detect-changes.result == 'success' &&
+      (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
+      (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_gha_arc == 'YES') ||
-        (github.event_name != 'workflow_dispatch' && needs.k8s-cluster.result == 'success')
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.gha-arc == 'true')
       )
     runs-on: ubuntu-24.04
-
-    # env:
-    #   ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
 
     steps:
       - name: Clone repository on runner
@@ -234,34 +221,16 @@ jobs:
           repositories: dip-app
 
       - name: Read variables from dip_app repo
-        # id: dip_app_vars
         env:
           GH_TOKEN: ${{ steps.dip_app_vars_token.outputs.token }}
         run: |
           VAR_APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")
           echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_ENV
-
-      # VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
-      # VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
-      # { echo "ANSIBLE_INVENTORY_PATH<<EOF"; echo "$VAR_ANSIBLE_INVENTORY_PATH"; echo "EOF"; } >> $GITHUB_ENV
-
-      # VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl-ad/dip-yc")
-      # echo "TF_BACKEND_S3=$VAR_TF_BACKEND_S3" >> $GITHUB_ENV
-
-      # VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl-ad/dip-yc")
-      # VAR_YC_INFRA_BUCKET_NAME=$(echo "$VAR_YC_INFRA_BUCKET" | jq -r .name)
-      # { echo "YC_INFRA_BUCKET_NAME<<EOF"; echo "$VAR_YC_INFRA_BUCKET_NAME"; echo "EOF"; } >> $GITHUB_ENV
-
-      # VAR_YC_INFRA_SA_KEY_FILE=$(gh variable get YC_INFRA_SA_KEY_FILE --repo "rizl-ad/dip-yc")
-      # VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_YC_INFRA_SA_KEY_FILE" | jq -r '.dir_path + "/" + .name')
-      # { echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"; echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"; echo "EOF"; } >> $GITHUB_ENV
       
       - name: Download inventory file
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          # TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
-          # YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
           ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
           YC_INFRA_BUCKET_NAME: ${{ fromJSON(vars.YC_INFRA_BUCKET).name }}
           TF_BACKEND_S3: ${{ vars.TF_BACKEND_S3 }}
@@ -274,30 +243,25 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          # APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.app_namespace }}
           APP_ID: ${{ secrets.YC_K8S_ARC_APP_ID }}
           APP_INSTALLATION_ID: ${{ secrets.YC_K8S_ARC_APP_INSTALLATION_ID }}
           APP_PRIVATE_KEY: ${{ secrets.YC_K8S_ARC_APP_PRIVATE_KEY }}
           ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
           GITHUB_CONFIG_URL: "https://github.com/rizl-ad/dip-app"
-        # ansible читает переменную APP_NAMESPACE
+          # ansible читает переменную APP_NAMESPACE
         run: ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
   
   ycr-secret:
     name: Run ycr-secret Ansible playbook
-    needs: gha-arc
+    needs: [ detect-changes, k8s-cluster ]
     if: |
-      always() && (
+      always() && needs.detect-changes.result == 'success' &&
+      (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
+      (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_ycr_secret == 'YES') ||
-        (github.event_name != 'workflow_dispatch' && needs.k8s-cluster.result == 'success')
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.ycr == 'true')
       )
     runs-on: ubuntu-24.04
-
-    # env:
-    #   ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
-    #   YC_INFRA_SA_KEY_FILE_PATH: ${{ needs.k8s-cluster.outputs.yc_infra_sa_key_file_path }}
-    #   TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
-    #   YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
 
     steps:
       - name: Clone repository on runner
@@ -319,27 +283,11 @@ jobs:
           repositories: dip-app
 
       - name: Read variables from dip_app repo
-        # id: dip_app_vars
         env:
           GH_TOKEN: ${{ steps.dip_app_vars_token.outputs.token }}
         run: |
           VAR_APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")
           echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_ENV
-
-      # VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
-      # VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
-      # { echo "ANSIBLE_INVENTORY_PATH<<EOF"; echo "$VAR_ANSIBLE_INVENTORY_PATH"; echo "EOF"; } >> $GITHUB_ENV
-
-      # VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl-ad/dip-yc")
-      # echo "TF_BACKEND_S3=$VAR_TF_BACKEND_S3" >> $GITHUB_ENV
-
-      # VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl-ad/dip-yc")
-      # VAR_YC_INFRA_BUCKET_NAME=$(echo "$VAR_YC_INFRA_BUCKET" | jq -r .name)
-      # { echo "YC_INFRA_BUCKET_NAME<<EOF"; echo "$VAR_YC_INFRA_BUCKET_NAME"; echo "EOF"; } >> $GITHUB_ENV
-
-      # VAR_YC_INFRA_SA_KEY_FILE=$(gh variable get YC_INFRA_SA_KEY_FILE --repo "rizl-ad/dip-yc")
-      # VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_YC_INFRA_SA_KEY_FILE" | jq -r '.dir_path + "/" + .name')
-      # { echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"; echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"; echo "EOF"; } >> $GITHUB_ENV
 
       - name: Check required files
         env:
@@ -384,19 +332,18 @@ jobs:
         env:
           ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
           YC_INFRA_SA_KEY_FILE_PATH: ${{ fromJSON(vars.YC_INFRA_SA_KEY_FILE).dir_path }}/${{ fromJSON(vars.YC_INFRA_SA_KEY_FILE).name }}
-        # ansible читает переменную APP_NAMESPACE
+          # ansible читает переменную APP_NAMESPACE
         run: ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" ycr-secret.yml
 
   app:
     name: Deploy app
-    needs: ycr-secret
+    needs: [ detect-changes, ycr-secret ]
     if: |
-      always() && (
+      always() && needs.detect-changes.result == 'success' &&
+      (needs.ycr-secret.result == 'success' || needs.ycr-secret.result == 'skipped') &&
+      (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_app == 'YES') ||
-        (
-          (github.event_name != 'workflow_dispatch' && needs.ycr-secret.result == 'success') &&
-          (github.event_name != 'workflow_dispatch' && needs.gha-arc.result == 'success')
-        )
+        github.event_name == 'pull_request'
       )
     runs-on: ubuntu-24.04
 
