@@ -86,7 +86,7 @@
         kind: ServiceAccount
         namespace: "{{ gha_arc_namespace }}"
         label_selectors:
-          - "app.kubernetes.io/name=gha-runner-scale-set-controller"
+          - "app.kubernetes.io/name=gha-rs-controller"
       register: controller_sa_list
 
     - name: Get runner ServiceAccount name
@@ -94,7 +94,7 @@
         kind: ServiceAccount
         namespace: "{{ gha_runners_namespace }}"
         label_selectors:
-          - "app.kubernetes.io/name=gha-runner-scale-set"
+          - "app.kubernetes.io/name=gha-arc-runner-set"
       register: runner_sa_list
 
     # Права на управление эфемерными подами в namespace gha-arc-runners
