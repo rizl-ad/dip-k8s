@@ -66,7 +66,6 @@ jobs:
     needs: detect-changes
     if: |
       (github.event_name == 'workflow_dispatch' && github.event.inputs.run_k8s_cluster == 'YES') ||
-      (github.event_name == 'repository_dispatch') ||
       (github.event_name == 'pull_request' && needs.detect-changes.outputs.k8s == 'true')
     runs-on: ubuntu-24.04
     
@@ -131,7 +130,6 @@ jobs:
       always() && needs.detect-changes.result == 'success' &&
       (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
       (
-        github.event_name == 'repository_dispatch' ||
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_monitoring == 'YES') ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.monitoring == 'true')
       )
@@ -198,7 +196,6 @@ jobs:
       always() && needs.detect-changes.result == 'success' &&
       (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
       (
-        github.event_name == 'repository_dispatch' ||
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_gha_arc == 'YES') ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.gha-arc == 'true')
       )
@@ -261,7 +258,6 @@ jobs:
       always() && needs.detect-changes.result == 'success' &&
       (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
       (
-        github.event_name == 'repository_dispatch' ||
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_ycr_secret == 'YES') ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.ycr == 'true')
       )
@@ -349,7 +345,6 @@ jobs:
         (needs.ycr-secret.result == 'success' || needs.ycr-secret.result == 'skipped')
       ) &&
       (
-        github.event_name == 'repository_dispatch' ||
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_app == 'YES') ||
         (
           github.event_name == 'pull_request' &&
