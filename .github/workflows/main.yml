@@ -134,6 +134,71 @@ jobs:
         run: |
           ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml
 
+  monitoring:
+    name: Run monitoring Ansible playbook
+    needs: k8s-cluster
+    if: |
+      always() && (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.run_gha_arc == 'YES') ||
+        (github.event_name != 'workflow_dispatch' && needs.k8s-cluster.result == 'success')
+      )
+    runs-on: ubuntu-24.04
+
+    environment: code_review
+
+    steps:
+      - name: Clone repository on runner
+        uses: actions/checkout@v6
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+          log-public-key: false
+
+      - name: Check required files
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
+          YC_INFRA_BUCKET_NAME: ${{ fromJSON(vars.YC_INFRA_BUCKET).name }}
+          TF_BACKEND_S3: ${{ vars.TF_BACKEND_S3 }}
+        run: |
+          set -euo pipefail
+
+          check_file () {
+            local key="$1"
+            aws s3api head-object \
+              --bucket "$YC_INFRA_BUCKET_NAME" \
+              --key "$key" \
+              --endpoint-url "$TF_BACKEND_S3" > /dev/null 2>&1 || \
+              { echo "File $key not found. Run the Terraform yc-infra project."; exit 1; }
+          }
+
+          check_file "$ANSIBLE_INVENTORY_PATH"
+          echo "The required files were found."
+
+      - name: Download inventory file
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
+          YC_INFRA_BUCKET_NAME: ${{ fromJSON(vars.YC_INFRA_BUCKET).name }}
+          TF_BACKEND_S3: ${{ vars.TF_BACKEND_S3 }}
+        run: |
+          aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" \
+            "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
+
+      - name: Install Ansible requirements
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run Ansible playbook
+        env:
+          ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
+          K8S_VERSION: ${{ vars.K8S_VERSION }}
+        run: |
+          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" monitoring.yml
+  
   gha-arc:
     name: Run gha-arc Ansible playbook
     needs: k8s-cluster
@@ -173,7 +238,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.dip_app_vars_token.outputs.token }}
         run: |
-          echo "APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")" >> $GITHUB_ENV
+          VAR_APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")
+          echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_ENV
 
       # VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
       # VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
@@ -224,7 +290,7 @@ jobs:
     if: |
       always() && (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_ycr_secret == 'YES') ||
-        (github.event_name != 'workflow_dispatch' && needs.gha-arc.result == 'success')
+        (github.event_name != 'workflow_dispatch' && needs.k8s-cluster.result == 'success')
       )
     runs-on: ubuntu-24.04
 
@@ -327,7 +393,10 @@ jobs:
     if: |
       always() && (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_app == 'YES') ||
-        (github.event_name != 'workflow_dispatch' && needs.ycr-secret.result == 'success')
+        (
+          (github.event_name != 'workflow_dispatch' && needs.ycr-secret.result == 'success') &&
+          (github.event_name != 'workflow_dispatch' && needs.gha-arc.result == 'success')
+        )
       )
     runs-on: ubuntu-24.04
 
