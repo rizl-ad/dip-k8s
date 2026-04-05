@@ -230,8 +230,8 @@ jobs:
         id: dip_app_vars_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.REMOTE_WORKFLOW_CALL_APP_ID }}
-          private-key: ${{ secrets.REMOTE_WORKFLOW_CALL_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.SET_SECRET_APP_ID }}
+          private-key: ${{ secrets.SET_SECRET_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: |
             dip-yc
@@ -318,8 +318,8 @@ jobs:
         id: dip_app_vars_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.REMOTE_WORKFLOW_CALL_APP_ID }}
-          private-key: ${{ secrets.REMOTE_WORKFLOW_CALL_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.SET_SECRET_APP_ID }}
+          private-key: ${{ secrets.SET_SECRET_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: |
             dip-yc
