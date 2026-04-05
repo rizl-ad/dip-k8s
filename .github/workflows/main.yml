@@ -337,13 +337,13 @@ jobs:
 
   app:
     name: Deploy app
-    needs: [ detect-changes, gha-arc, ycr-secret ]
+    needs: [ gha-arc, ycr-secret ]
     if: |
-      always() && needs.detect-changes.result == 'success' && 
-      (
-        (needs.gha-arc.result == 'success' || needs.gha-arc.result == 'skipped') &&
-        (needs.ycr-secret.result == 'success' || needs.ycr-secret.result == 'skipped')
-      ) &&
+      !cancelled() && !failure() &&
+      needs.detect-changes.result == 'success' &&
+      (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
+      (needs.gha-arc.result == 'success' || needs.gha-arc.result == 'skipped') &&
+      (needs.ycr-secret.result == 'success' || needs.ycr-secret.result == 'skipped') &&
       (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_app == 'YES') ||
         (
