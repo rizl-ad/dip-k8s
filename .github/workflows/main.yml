@@ -135,8 +135,7 @@ jobs:
         env:
           ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
           K8S_VERSION: ${{ vars.K8S_VERSION }}
-        run: |
-          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml
+        run: ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml
 
   monitoring:
     name: Run monitoring Ansible playbook
@@ -200,8 +199,7 @@ jobs:
         env:
           ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
           K8S_VERSION: ${{ vars.K8S_VERSION }}
-        run: |
-          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" monitoring.yml
+        run: ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" monitoring.yml
   
   gha-arc:
     name: Run gha-arc Ansible playbook
@@ -283,8 +281,7 @@ jobs:
           ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
           GITHUB_CONFIG_URL: "https://github.com/rizl-ad/dip-app"
         # ansible читает переменную APP_NAMESPACE
-        run: |
-          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
+        run: ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
   
   ycr-secret:
     name: Run ycr-secret Ansible playbook
@@ -326,7 +323,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.dip_app_vars_token.outputs.token }}
         run: |
-          echo "APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")" >> $GITHUB_ENV
+          VAR_APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")
+          echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_ENV
 
       # VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
       # VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
@@ -383,9 +381,11 @@ jobs:
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run Ansible playbook
+        env:
+          ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
+          YC_INFRA_SA_KEY_FILE_PATH: ${{ fromJSON(vars.YC_INFRA_SA_KEY_FILE).dir_path }}/${{ fromJSON(vars.YC_INFRA_SA_KEY_FILE).name }}
         # ansible читает переменную APP_NAMESPACE
-        run: |
-          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" ycr-secret.yml
+        run: ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" ycr-secret.yml
 
   app:
     name: Deploy app
