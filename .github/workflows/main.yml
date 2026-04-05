@@ -75,7 +75,7 @@ jobs:
           } >> $GITHUB_ENV
 
           VAR_YC_INFRA_SA_KEY_FILE=$(gh variable get YC_INFRA_SA_KEY_FILE --repo "rizl-ad/dip-yc")
-          VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_CONTAINER_REGISTRY" | jq -r '.dir_path + "/" + .name')
+          VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_YC_INFRA_SA_KEY_FILE" | jq -r '.dir_path + "/" + .name')
           {
             echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"
             echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"
