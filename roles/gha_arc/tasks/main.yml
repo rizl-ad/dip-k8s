@@ -59,9 +59,9 @@
           maxRunners: 5
           containerMode:
             type: dind
-          controllerServiceAccount:
-            name: "{{ gha_arc_sa_name }}"
-            namespace: "{{ gha_arc_namespace }}"
+          # controllerServiceAccount:
+          #   name: "{{ gha_arc_sa_name }}"
+          #   namespace: "{{ gha_arc_namespace }}"
           # template:
           #   spec:
           #     serviceAccountName: "{{ gha_arc_sa_name }}"
@@ -81,6 +81,22 @@
           #             value: ""
         wait: true
 
+    - name: Get controller ServiceAccount name
+      kubernetes.core.k8s_info:
+        kind: ServiceAccount
+        namespace: "{{ gha_arc_namespace }}"
+        label_selectors:
+          - "app.kubernetes.io/name=gha-runner-scale-set-controller"
+      register: controller_sa_list
+
+    - name: Get runner ServiceAccount name
+      kubernetes.core.k8s_info:
+        kind: ServiceAccount
+        namespace: "{{ gha_runners_namespace }}"
+        label_selectors:
+          - "app.kubernetes.io/name=gha-runner-scale-set"
+      register: runner_sa_list
+
     # Права на управление эфемерными подами в namespace gha-arc-runners
     - name: Create role for ARC management
       kubernetes.core.k8s:
@@ -93,27 +109,32 @@
             namespace: "{{ gha_runners_namespace }}"
           rules:
             - apiGroups: [""]
-              resources: ["pods", "pods/exec", "pods/log", "pods/status"]
+              resources: ["pods", "pods/exec", "pods/log", "pods/status", "secrets"]
               verbs: ["get", "list", "watch", "create", "delete", "patch"]
-            - apiGroups: ["batch"]
-              resources: ["jobs"]
-              verbs: ["get", "list", "watch", "create", "delete", "patch"]
-            - apiGroups: [""]
-              resources: ["secrets"]
-              verbs: ["get", "list", "watch"]
+            # - apiGroups: [""]
+            #   resources: ["pods", "pods/exec", "pods/log", "pods/status"]
+            #   verbs: ["get", "list", "watch", "create", "delete", "patch"]
+            # - apiGroups: ["batch"]
+            #   resources: ["jobs"]
+            #   verbs: ["get", "list", "watch", "create", "delete", "patch"]
+            # - apiGroups: [""]
+            #   resources: ["secrets"]
+            #   verbs: ["get", "list", "watch"]
 
-    - name: Bind management role to ARC ServiceAccount
+    - name: Bind management role to ARC Controller ServiceAccount
+      when: controller_sa_list.resources | length > 0
       kubernetes.core.k8s:
         state: present
         definition:
           apiVersion: rbac.authorization.k8s.io/v1
           kind: RoleBinding
           metadata:
-            name: arc-runner-manager-binding
+            name: gha-arc-controller-rb
             namespace: "{{ gha_runners_namespace }}"
           subjects:
             - kind: ServiceAccount
-              name: "{{ gha_arc_sa_name }}"
+              name: "{{ controller_sa_list.resources[0].metadata.name }}"
+              # name: "{{ gha_arc_sa_name }}"
               # namespace: "{{ gha_runners_namespace }}"
               namespace: "{{ gha_arc_namespace }}"
           roleRef:
@@ -122,7 +143,7 @@
             apiGroup: rbac.authorization.k8s.io
 
     # Права для деплоя через Helm в namespace app
-    - name: Create role for app deployment via Helm
+    - name: Create role for app deployment
       kubernetes.core.k8s:
         state: present
         definition:
@@ -137,6 +158,7 @@
               verbs: ["*"]
 
     - name: Bind deploer role to ARC ServiceAccount
+      when: runner_sa_list.resources | length > 0
       kubernetes.core.k8s:
         state: present
         definition:
@@ -147,7 +169,8 @@
             namespace: "{{ app_namespace }}"
           subjects:
             - kind: ServiceAccount
-              name: "{{ gha_arc_sa_name }}"
+              name: "{{ runner_sa_list.resources[0].metadata.name }}"
+              # name: "{{ gha_arc_sa_name }}"
               namespace: "{{ gha_runners_namespace }}"
           roleRef:
             kind: Role
