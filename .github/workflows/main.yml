@@ -18,11 +18,11 @@ jobs:
     runs-on: ubuntu-24.04
 
     outputs:
-      APP_NAMESPACE: ${{ steps.repos_vars.outputs.APP_NAMESPACE }}
-      ANSIBLE_INVENTORY_PATH: ${{ steps.repos_vars.outputs.ANSIBLE_INVENTORY_PATH }}
-      TF_BACKEND_S3: ${{ steps.repos_vars.outputs.TF_BACKEND_S3 }}
-      YC_INFRA_BUCKET_NAME: ${{ steps.repos_vars.outputs.YC_INFRA_BUCKET_NAME }}
-      YC_INFRA_SA_KEY_FILE_PATH: ${{ steps.repos_vars.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
+      app_namespace: ${{ steps.repos_vars.outputs.APP_NAMESPACE }}
+      ansible_inventory_path: ${{ steps.repos_vars.outputs.ANSIBLE_INVENTORY_PATH }}
+      tf_backend_s3: ${{ steps.repos_vars.outputs.TF_BACKEND_S3 }}
+      yc_infra_bucket_name: ${{ steps.repos_vars.outputs.YC_INFRA_BUCKET_NAME }}
+      yc_infra_sa_key_file_path: ${{ steps.repos_vars.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
     
     environment: code_review
 
@@ -54,33 +54,26 @@ jobs:
         run: |
           VAR_APP_NAMESPACE=$(gh variable get APP_NAMESPACE --repo "rizl-ad/dip-app")
           echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_OUTPUT
+          echo "APP_NAMESPACE=$VAR_APP_NAMESPACE" >> $GITHUB_ENV
 
           VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
           VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
-          {
-            echo "ANSIBLE_INVENTORY_PATH<<EOF"
-            echo "$VAR_ANSIBLE_INVENTORY_PATH"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          { echo "ANSIBLE_INVENTORY_PATH<<EOF"; echo "$VAR_ANSIBLE_INVENTORY_PATH"; echo "EOF"; } >> $GITHUB_OUTPUT
+          { echo "ANSIBLE_INVENTORY_PATH<<EOF"; echo "$VAR_ANSIBLE_INVENTORY_PATH"; echo "EOF"; } >> $GITHUB_ENV
 
           VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl-ad/dip-yc")
           echo "TF_BACKEND_S3=$VAR_TF_BACKEND_S3" >> $GITHUB_OUTPUT
+          echo "TF_BACKEND_S3=$VAR_TF_BACKEND_S3" >> $GITHUB_ENV
 
           VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl-ad/dip-yc")
           VAR_YC_INFRA_BUCKET_NAME=$(echo "$VAR_YC_INFRA_BUCKET" | jq -r .name)
-          {
-            echo "YC_INFRA_BUCKET_NAME<<EOF"
-            echo "$VAR_YC_INFRA_BUCKET_NAME"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          { echo "YC_INFRA_BUCKET_NAME<<EOF"; echo "$VAR_YC_INFRA_BUCKET_NAME"; echo "EOF"; } >> $GITHUB_OUTPUT
+          { echo "YC_INFRA_BUCKET_NAME<<EOF"; echo "$VAR_YC_INFRA_BUCKET_NAME"; echo "EOF"; } >> $GITHUB_ENV
 
           VAR_YC_INFRA_SA_KEY_FILE=$(gh variable get YC_INFRA_SA_KEY_FILE --repo "rizl-ad/dip-yc")
           VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_YC_INFRA_SA_KEY_FILE" | jq -r '.dir_path + "/" + .name')
-          {
-            echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"
-            echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          { echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"; echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"; echo "EOF"; } >> $GITHUB_OUTPUT
+          { echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"; echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"; echo "EOF"; } >> $GITHUB_ENV
 
       # VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl-ad/dip-yc")
       # echo "AWS_DEFAULT_REGION=$VAR_AWS_DEFAULT_REGION" >> $GITHUB_ENV
@@ -89,9 +82,6 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
-          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
-          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
         run: |
           set -euo pipefail
 
@@ -111,9 +101,6 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
-          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
-          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
         run: |
           aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" \
             "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
@@ -123,7 +110,6 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
           K8S_VERSION: ${{ vars.K8S_VERSION }}
         run: |
           ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml
@@ -135,7 +121,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
+      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
 
     steps:
       - name: Clone repository on runner
@@ -151,8 +137,8 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
-          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
+          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
+          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
         run: |
           aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" \
             "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
@@ -162,7 +148,7 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.APP_NAMESPACE }}
+          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.app_namespace }}
           APP_ID: ${{ secrets.YC_K8S_ARC_APP_ID }}
           APP_INSTALLATION_ID: ${{ secrets.YC_K8S_ARC_APP_INSTALLATION_ID }}
           APP_PRIVATE_KEY: ${{ secrets.YC_K8S_ARC_APP_PRIVATE_KEY }}
@@ -177,10 +163,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
-      YC_INFRA_SA_KEY_FILE_PATH: ${{ needs.k8s-cluster.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
-      TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
-      YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
+      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
+      YC_INFRA_SA_KEY_FILE_PATH: ${{ needs.k8s-cluster.outputs.yc_infra_sa_key_file_path }}
+      TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
+      YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
 
     steps:
       - name: Clone repository on runner
@@ -226,7 +212,7 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.APP_NAMESPACE }}
+          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.app_namespace }}
         run: |
           ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
 
