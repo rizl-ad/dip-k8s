@@ -59,7 +59,7 @@ jobs:
           VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
           {
             echo "ANSIBLE_INVENTORY_PATH<<EOF"
-            echo $VAR_ANSIBLE_INVENTORY_PATH"
+            echo "$VAR_ANSIBLE_INVENTORY_PATH"
             echo "EOF"
           } >> $GITHUB_ENV
 
@@ -78,7 +78,7 @@ jobs:
           VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_CONTAINER_REGISTRY" | jq -r '.dir_path + "/" + .name')
           {
             echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"
-            echo $VAR_YC_INFRA_SA_KEY_FILE_PATH"
+            echo "$VAR_YC_INFRA_SA_KEY_FILE_PATH"
             echo "EOF"
           } >> $GITHUB_ENV
 
