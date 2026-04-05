@@ -9,6 +9,10 @@ on:
         description: 'Enter "YES" to run k8s_cluster job'
         required: true
         default: 'no'
+      run_monitoring:
+        description: 'Enter "YES" to run monitoring job'
+        required: true
+        default: 'no'
       run_gha_arc:
         description: 'Enter "YES" to run gha_arc job'
         required: true
@@ -139,7 +143,7 @@ jobs:
     needs: k8s-cluster
     if: |
       always() && (
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.run_gha_arc == 'YES') ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.run_monitoring == 'YES') ||
         (github.event_name != 'workflow_dispatch' && needs.k8s-cluster.result == 'success')
       )
     runs-on: ubuntu-24.04
