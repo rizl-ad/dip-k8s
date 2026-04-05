@@ -24,9 +24,6 @@ jobs:
       yc_infra_bucket_name: ${{ steps.repos_vars.outputs.YC_INFRA_BUCKET_NAME }}
       yc_infra_sa_key_file_path: ${{ steps.repos_vars.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
     
-    env:
-      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
-
     environment: code_review
 
     steps:
@@ -92,6 +89,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
           TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
           YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
         run: |
@@ -113,6 +111,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
           TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
           YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
         run: |
@@ -124,6 +123,7 @@ jobs:
 
       - name: Run Ansible playbook
         env:
+          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
           K8S_VERSION: ${{ vars.K8S_VERSION }}
         run: |
           ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml
