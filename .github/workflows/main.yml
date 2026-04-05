@@ -18,11 +18,11 @@ jobs:
     runs-on: ubuntu-24.04
 
     outputs:
-      app_namespace: ${{ steps.repos_vars.outputs.APP_NAMESPACE }}
-      ansible_inventory_path: ${{ steps.repos_vars.outputs.ANSIBLE_INVENTORY_PATH }}
-      tf_backend_s3: ${{ steps.repos_vars.outputs.TF_BACKEND_S3 }}
-      yc_infra_bucket_name: ${{ steps.repos_vars.outputs.YC_INFRA_BUCKET_NAME }}
-      yc_infra_sa_key_file_path: ${{ steps.repos_vars.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
+      APP_NAMESPACE: ${{ steps.repos_vars.outputs.APP_NAMESPACE }}
+      ANSIBLE_INVENTORY_PATH: ${{ steps.repos_vars.outputs.ANSIBLE_INVENTORY_PATH }}
+      TF_BACKEND_S3: ${{ steps.repos_vars.outputs.TF_BACKEND_S3 }}
+      YC_INFRA_BUCKET_NAME: ${{ steps.repos_vars.outputs.YC_INFRA_BUCKET_NAME }}
+      YC_INFRA_SA_KEY_FILE_PATH: ${{ steps.repos_vars.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
     
     environment: code_review
 
@@ -89,9 +89,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
-          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
-          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
+          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
+          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
+          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
         run: |
           set -euo pipefail
 
@@ -111,9 +111,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
-          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
-          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
+          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
+          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
+          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
         run: |
           aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" \
             "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
@@ -123,7 +123,7 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
+          ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
           K8S_VERSION: ${{ vars.K8S_VERSION }}
         run: |
           ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" k8s-cluster.yml
@@ -135,7 +135,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
+      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
 
     steps:
       - name: Clone repository on runner
@@ -151,8 +151,8 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
-          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
+          TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
+          YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
         run: |
           aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" \
             "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
@@ -162,7 +162,7 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.app_namespace }}
+          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.APP_NAMESPACE }}
           APP_ID: ${{ secrets.YC_K8S_ARC_APP_ID }}
           APP_INSTALLATION_ID: ${{ secrets.YC_K8S_ARC_APP_INSTALLATION_ID }}
           APP_PRIVATE_KEY: ${{ secrets.YC_K8S_ARC_APP_PRIVATE_KEY }}
@@ -177,10 +177,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ansible_inventory_path }}
-      YC_INFRA_SA_KEY_FILE_PATH: ${{ needs.k8s-cluster.outputs.yc_infra_sa_key_file_path }}
-      TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.tf_backend_s3 }}
-      YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.yc_infra_bucket_name }}
+      ANSIBLE_INVENTORY_PATH: ${{ needs.k8s-cluster.outputs.ANSIBLE_INVENTORY_PATH }}
+      YC_INFRA_SA_KEY_FILE_PATH: ${{ needs.k8s-cluster.outputs.YC_INFRA_SA_KEY_FILE_PATH }}
+      TF_BACKEND_S3: ${{ needs.k8s-cluster.outputs.TF_BACKEND_S3 }}
+      YC_INFRA_BUCKET_NAME: ${{ needs.k8s-cluster.outputs.YC_INFRA_BUCKET_NAME }}
 
     steps:
       - name: Clone repository on runner
@@ -226,7 +226,7 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.app_namespace }}
+          APP_NAMESPACE: ${{ needs.k8s-cluster.outputs.APP_NAMESPACE }}
         run: |
           ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
 
