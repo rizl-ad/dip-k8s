@@ -4,6 +4,23 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      run_k8s_cluster:
+        description: 'Enter "YES" to run k8s_cluster job'
+        required: true
+        default: 'no'
+      run_gha_arc:
+        description: 'Enter "YES" to run gha_arc job'
+        required: true
+        default: 'no'
+      run_ycr_secret:
+        description: 'Enter "YES" to run ycr_secret job'
+        required: true
+        default: 'no'
+      run_app:
+        description: 'Enter "YES" to run app job'
+        required: true
+        default: 'no'
   repository_dispatch:
     types: [ deploy-k8s ]
 
