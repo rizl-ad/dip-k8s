@@ -98,6 +98,9 @@
             - apiGroups: ["batch"]
               resources: ["jobs"]
               verbs: ["get", "list", "watch", "create", "delete", "patch"]
+            - apiGroups: [""]
+              resources: ["secrets"]
+              verbs: ["get", "list", "watch"]
 
     - name: Bind management role to ARC ServiceAccount
       kubernetes.core.k8s:
