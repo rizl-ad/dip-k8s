@@ -385,7 +385,7 @@ jobs:
       - name: Run Ansible playbook
         # ansible читает переменную APP_NAMESPACE
         run: |
-          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" gha-arc.yml
+          ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" ycr-secret.yml
 
   app:
     name: Deploy app
