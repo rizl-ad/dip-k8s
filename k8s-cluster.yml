@@ -32,4 +32,3 @@
   hosts: k8s_master
   roles:
     - ingress_nginx
-    - kube_prometheus

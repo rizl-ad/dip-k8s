@@ -114,7 +114,8 @@
           subjects:
             - kind: ServiceAccount
               name: "{{ gha_arc_sa_name }}"
-              namespace: "{{ gha_runners_namespace }}"
+              # namespace: "{{ gha_runners_namespace }}"
+              namespace: "{{ gha_arc_namespace }}"
           roleRef:
             kind: Role
             name: "{{ gha_arc_mgmt_role_name }}"
