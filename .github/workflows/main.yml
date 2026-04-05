@@ -47,7 +47,7 @@ jobs:
             dip-yc
             dip-app
 
-      - name: Read variables from dip-yc repository
+      - name: Read variables from repositories
         id: repos_vars
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
@@ -57,18 +57,30 @@ jobs:
 
           VAR_ANSIBLE_INVENTORY=$(gh variable get ANSIBLE_INVENTORY --repo "rizl-ad/dip-yc")
           VAR_ANSIBLE_INVENTORY_PATH=$(echo "$VAR_ANSIBLE_INVENTORY" | jq -r '.dir_path + "/" + .name')
-          echo "ANSIBLE_INVENTORY_PATH=$VAR_ANSIBLE_INVENTORY_PATH" >> $GITHUB_ENV
+          {
+            echo "ANSIBLE_INVENTORY_PATH<<EOF"
+            echo $VAR_ANSIBLE_INVENTORY_PATH"
+            echo "EOF"
+          } >> $GITHUB_ENV
 
           VAR_TF_BACKEND_S3=$(gh variable get TF_BACKEND_S3 --repo "rizl-ad/dip-yc")
           echo "TF_BACKEND_S3=$VAR_TF_BACKEND_S3" >> $GITHUB_ENV
 
           VAR_YC_INFRA_BUCKET=$(gh variable get YC_INFRA_BUCKET --repo "rizl-ad/dip-yc")
           VAR_YC_INFRA_BUCKET_NAME=$(echo "$VAR_YC_INFRA_BUCKET" | jq -r .name)
-          echo "YC_INFRA_BUCKET_NAME="$VAR_YC_INFRA_BUCKET_NAME" >> $GITHUB_ENV
+          {
+            echo "YC_INFRA_BUCKET_NAME<<EOF"
+            echo "$VAR_YC_INFRA_BUCKET_NAME"
+            echo "EOF"
+          } >> $GITHUB_ENV
 
           VAR_YC_INFRA_SA_KEY_FILE=$(gh variable get YC_INFRA_SA_KEY_FILE --repo "rizl-ad/dip-yc")
           VAR_YC_INFRA_SA_KEY_FILE_PATH=$(echo "$VAR_CONTAINER_REGISTRY" | jq -r '.dir_path + "/" + .name')
-          echo "YC_INFRA_SA_KEY_FILE_PATH=$VAR_YC_INFRA_SA_KEY_FILE_PATH" >> $GITHUB_ENV
+          {
+            echo "YC_INFRA_SA_KEY_FILE_PATH<<EOF"
+            echo $VAR_YC_INFRA_SA_KEY_FILE_PATH"
+            echo "EOF"
+          } >> $GITHUB_ENV
 
       # VAR_AWS_DEFAULT_REGION=$(gh variable get AWS_DEFAULT_REGION --repo "rizl-ad/dip-yc")
       # echo "AWS_DEFAULT_REGION=$VAR_AWS_DEFAULT_REGION" >> $GITHUB_ENV
