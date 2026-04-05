@@ -158,7 +158,6 @@
               verbs: ["*"]
 
     - name: Bind deploer role to ARC
-      when: runner_sa_list.resources | length > 0
       kubernetes.core.k8s:
         state: present
         definition:
