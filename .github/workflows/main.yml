@@ -32,7 +32,9 @@ jobs:
 
   k8s-cluster:
     name: Run k8s-cluster Ansible playbook
-    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.run_k8s_cluster == 'YES')
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_k8s_cluster == 'YES') ||
+      (github.event_name != 'workflow_dispatch')
     runs-on: ubuntu-24.04
 
     outputs:
@@ -136,8 +138,10 @@ jobs:
     name: Run gha-arc Ansible playbook
     needs: k8s-cluster
     if: |
-      needs.k8s-cluster.result == 'success' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_gha-arc == 'YES')
+      always() && (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.run_gha_arc == 'YES') ||
+        (github.event_name != 'workflow_dispatch' && needs.k8s-cluster.result == 'success')
+      )
     runs-on: ubuntu-24.04
 
     env:
@@ -180,8 +184,10 @@ jobs:
     name: Run ycr-secret Ansible playbook
     needs: gha-arc
     if: |
-      needs.gha-arc.result == 'success' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_ycr-secret == 'YES')
+      always() && (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.run_ycr_secret == 'YES') ||
+        (github.event_name != 'workflow_dispatch' && needs.gha-arc.result == 'success')
+      )
     runs-on: ubuntu-24.04
 
     env:
@@ -242,8 +248,10 @@ jobs:
     name: Deploy app
     needs: ycr-secret
     if: |
-      needs.ycr-secret.result == 'success' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_app == 'YES')
+      always() && (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.run_app == 'YES') ||
+        (github.event_name != 'workflow_dispatch' && needs.ycr-secret.result == 'success')
+      )
     runs-on: ubuntu-24.04
 
     steps:
