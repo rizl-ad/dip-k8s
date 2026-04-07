@@ -1,0 +1,164 @@
+---
+# tasks file for argocd
+- name: Install GitHub ARC
+  when: ansible_host == apiserver_advertise_address
+  block:
+    - name: Check Kubernetes API
+      kubernetes.core.k8s_info:
+        kind: Node
+      register: node_list
+      until:
+        - node_list.resources is defined
+        - node_list.resources | length > 0
+      retries: 10
+      delay: 10
+      ignore_errors: false
+
+    - name: Update apt cache
+      become: true
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_pkg_mgr == 'apt'
+
+    - name: Update dnf cache
+      become: true
+      ansible.builtin.dnf:
+        update_cache: true
+      when: ansible_pkg_mgr == 'dnf'
+
+    - name: Install required Python packages (Debian/Ubuntu)
+      become: true
+      ansible.builtin.apt:
+        name: python3-passlib
+        state: present
+      when: ansible_os_family == "Debian"
+      register: requirements_package_install_result
+      until: requirements_package_install_result is success
+      retries: 30
+      delay: 20
+
+    - name: Install required Python modules (RedHat/Fedora)
+      ansible.builtin.pip:
+        name: passlib
+        state: present
+      when: ansible_os_family == "RedHat"
+      register: requirements_package_install_result
+      until: requirements_package_install_result is success
+      retries: 30
+      delay: 20
+
+    - name: Create namespaces
+      kubernetes.core.k8s:
+        name: "{{ item }}"
+        kind: Namespace
+        state: present
+      loop:
+        - "{{ argocd_namespace }}"
+        - "{{ app_namespace }}"
+
+    - name: Install ArgoCD
+      kubernetes.core.k8s:
+        state: present
+        src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        namespace: "{{ argocd_namespace }}"
+        apply: true
+        server_side_apply:
+          field_manager: ansible
+          force_conflicts: true
+
+    - name: Set administrative password
+      no_log: true
+      diff: false
+      kubernetes.core.k8s:
+        state: patched
+        kind: ConfigMap
+        name: argocd-cm
+        namespace: "{{ argocd_namespace }}"
+        definition:
+          data:
+            admin.password: "{{ admin_password | password_hash('blowfish') }}"  # required passlib
+            admin.passwordMtime: "{{ ansible_date_time.iso8601 }}"
+
+    - name: Delete temp password ArgoCD
+      kubernetes.core.k8s:
+        state: absent
+        name: argocd-initial-admin-secret
+        namespace: "{{ argocd_namespace }}"
+
+    - name: Create ImagePullSecret for Yandex Registry
+      no_log: true
+      diff: false
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          kind: Secret
+          metadata:
+            name: ycr-secret
+            namespace: "{{ app_namespace }}"
+          type: kubernetes.io/dockerconfigjson
+          data:
+            .dockerconfigjson: >-
+              {{
+                {
+                  "auths": {
+                    "cr.yandex": {
+                      "auth": ("json_key:" + lookup('file', sa_key_file_path)) | b64encode
+                    }
+                  }
+                } | to_json
+              }}
+
+    - name: Create Application to connet with GitHub
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: "{{ app_name }}"
+            namespace: "{{ argocd_namespace }}"
+          spec:
+            project: default
+            source:
+              repoURL: "{{ github_repo_url }}"
+              targetRevision: main
+              path: "{{ guthub_target }}"
+              helm:
+                valueFiles: ["values.yaml"]
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: "{{ app_namespace }}"
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true
+
+    - name: ArgoCD Ingress
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: argocd-server-ingress
+            namespace: "{{ argocd_namespace }}"
+            annotations:
+              kubernetes.io/ingress.class: nginx
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"   # Обязательно: ArgoCD внутри пода использует HTTPS
+              nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"     # Отключаем проверку сертификата между Nginx и подом ArgoCD
+              nginx.ingress.kubernetes.io/proxy-body-size: "0"        # Увеличиваем размер тела запроса и таймауты
+              nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+              nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+          spec:
+            rules:
+              - http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: argocd-server
+                          port:
+                            number: 443

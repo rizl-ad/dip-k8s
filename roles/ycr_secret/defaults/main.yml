@@ -1,4 +1,0 @@
----
-# defaults file for ycr_secret
-app_namespace: "{{ lookup('env', 'APP_NAMESPACE') }}"
-sa_key_file_path: "{{ lookup('env', 'YC_INFRA_SA_KEY_FILE_PATH') }}"
