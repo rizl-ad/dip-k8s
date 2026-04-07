@@ -83,6 +83,7 @@
     - name: Delete temp password ArgoCD
       kubernetes.core.k8s:
         state: absent
+        kind: Secret
         name: argocd-initial-admin-secret
         namespace: "{{ argocd_namespace }}"
 
