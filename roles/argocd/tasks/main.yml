@@ -141,7 +141,7 @@
       kubernetes.core.k8s:
         state: patched
         kind: ConfigMap
-        name: argocd-prefix-cm
+        name: argocd-cmd-params-cm
         namespace: "{{ argocd_namespace }}"
         definition:
           data:
