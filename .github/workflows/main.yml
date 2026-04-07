@@ -234,10 +234,6 @@ jobs:
           pip install kubernetes passlib bcrypt==4.0.1
           ansible-galaxy collection install kubernetes.core
 
-      - name: Run Playbook
-        run: |
-          ansible-playbook your-playbook.yml
-
       - name: Run Ansible playbook
         env:
           # APP_ID: ${{ secrets.YC_K8S_ARC_APP_ID }}
