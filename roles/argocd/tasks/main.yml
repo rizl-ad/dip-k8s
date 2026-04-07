@@ -76,7 +76,7 @@
         namespace: "{{ argocd_namespace }}"
         definition:
           data:
-            admin.password: "{{ admin_password | password_hash('blowfish') }}"  # required passlib
+            admin.password: "{{ argocd_admin_password | password_hash('blowfish') }}"  # required passlib
             admin.passwordMtime: "{{ ansible_date_time.iso8601 }}"
 
     - name: Delete temp password ArgoCD
