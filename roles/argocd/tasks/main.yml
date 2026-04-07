@@ -107,7 +107,7 @@
                       "auth": ("json_key:" + lookup('file', sa_key_file_path)) | b64encode
                     }
                   }
-                } | to_json
+                } | to_json | b64encode
               }}
 
     - name: Create Application to connet with GitHub
