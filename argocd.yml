@@ -11,7 +11,7 @@
     - name: Gather facts
       ansible.builtin.setup:
 
-- name: Create secret for deployment
+- name: Install and configure GitHub Actions runner controller (ARC)
   hosts: k8s_master
   roles:
-    - ycr_secret
+    - argocd
