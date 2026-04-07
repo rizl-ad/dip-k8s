@@ -229,9 +229,10 @@ jobs:
       # - name: Install Ansible requirements
       #   run: ansible-galaxy collection install -r requirements.yml
 
-      - name: Setup Ansible environment
+      - name: Install dependencies inside Ansible's Python
         run: |
-          pip install kubernetes passlib bcrypt==4.0.1
+          PYTHON_PATH=$(ansible localhost -m debug -a "var=ansible_playbook_python" | grep "ansible_playbook_python" | cut -d '"' -f 4)
+          $PYTHON_PATH -m pip install passlib bcrypt==4.0.1 kubernetes
           ansible-galaxy collection install kubernetes.core
 
       - name: Run Ansible playbook
