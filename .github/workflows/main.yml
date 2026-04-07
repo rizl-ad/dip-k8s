@@ -38,6 +38,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -57,7 +60,8 @@ jobs:
     needs: detect-changes
     if: |
       (github.event_name == 'workflow_dispatch' && github.event.inputs.run_k8s_cluster == 'YES') ||
-      (github.event_name == 'pull_request' && needs.detect-changes.outputs.k8s == 'true')
+      (github.event_name == 'pull_request' && needs.detect-changes.outputs.k8s == 'true') ||
+      github.event_name == 'repository_dispatch'
     runs-on: ubuntu-24.04
     
     environment: code_review
@@ -110,7 +114,8 @@ jobs:
       (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
       (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_monitoring == 'YES') ||
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.monitoring == 'true')
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.monitoring == 'true') ||
+        github.event_name == 'repository_dispatch'
       )
     runs-on: ubuntu-24.04
 
@@ -164,7 +169,8 @@ jobs:
       (needs.k8s-cluster.result == 'success' || needs.k8s-cluster.result == 'skipped') &&
       (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_argocd == 'YES') ||
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.argocd == 'true')
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.argocd == 'true') ||
+        github.event_name == 'repository_dispatch'
       )
     runs-on: ubuntu-24.04
 
@@ -246,9 +252,8 @@ jobs:
       (needs.argocd.result == 'success' || needs.argocd.result == 'skipped') &&
       (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.run_app == 'YES') ||
-        (
-          github.event_name == 'pull_request' && needs.detect-changes.outputs.argocd == 'true'
-        )
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.argocd == 'true') ||
+        github.event_name == 'repository_dispatch'
       )
     runs-on: ubuntu-24.04
 
