@@ -137,7 +137,18 @@
               syncOptions:
                 - CreateNamespace=true
 
-    - name: ArgoCD Ingress
+    - name: Configure ArgoCD base path
+      kubernetes.core.k8s:
+        state: patched
+        kind: ConfigMap
+        name: argocd-prefix-cm
+        namespace: "{{ argocd_namespace }}"
+        definition:
+          data:
+            server.basehref: "/argocd"
+            server.rootpath: "/argocd"
+
+    - name: Create ArgoCD Ingress
       kubernetes.core.k8s:
         state: present
         definition:
@@ -150,14 +161,16 @@
               kubernetes.io/ingress.class: nginx
               nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"   # Обязательно: ArgoCD внутри пода использует HTTPS
               nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"     # Отключаем проверку сертификата между Nginx и подом ArgoCD
-              nginx.ingress.kubernetes.io/proxy-body-size: "0"        # Увеличиваем размер тела запроса и таймауты
-              nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-              nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+              # nginx.ingress.kubernetes.io/proxy-body-size: "0"        # Увеличиваем размер тела запроса и таймауты
+              # nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+              # nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+              nginx.ingress.kubernetes.io/use-regex: "true"
+              nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
           spec:
             rules:
               - http:
                   paths:
-                    - path: /
+                    - path: /argocd
                       pathType: Prefix
                       backend:
                         service:
