@@ -37,10 +37,6 @@
     #   until: requirements_package_install_result is success
     #   retries: 30
     #   delay: 20
-    - name: Install python dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        pip install passlib bcrypt==4.0.1
 
     - name: Install required Python modules (RedHat/Fedora)
       ansible.builtin.pip:

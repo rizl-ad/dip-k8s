@@ -229,6 +229,11 @@ jobs:
       - name: Install Ansible requirements
         run: ansible-galaxy collection install -r requirements.yml
 
+      - name: Install python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install passlib bcrypt==4.0.1
+
       - name: Run Ansible playbook
         env:
           # APP_ID: ${{ secrets.YC_K8S_ARC_APP_ID }}
