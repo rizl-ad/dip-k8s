@@ -163,6 +163,7 @@
               nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"     # Отключаем проверку сертификата между Nginx и подом ArgoCD
               nginx.ingress.kubernetes.io/use-regex: "true"
               nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
+              nginx.ingress.kubernetes.io/ssl-redirect: "false"
           spec:
             rules:
               - http:
