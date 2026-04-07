@@ -11,7 +11,7 @@
     - name: Gather facts
       ansible.builtin.setup:
 
-- name: Install and configure GitHub Actions runner controller (ARC)
+- name: Install ArgoCD
   hosts: k8s_master
   roles:
     - argocd
