@@ -36,13 +36,10 @@
     - name: Install Python packages on control node
       delegate_to: localhost
       connection: local
-      become: true
-      ansible.builtin.pip:
-        name: 
-          - passlib
-          - bcrypt==4.0.1
-          - kubernetes
-        executable: "{{ ansible_playbook_python | dirname }}/pip"
+      ansible.builtin.command:
+        cmd: "{{ ansible_playbook_python }} -m pip install passlib bcrypt==4.0.1 kubernetes"
+      register: pip_install_result
+      changed_when: "'Successfully installed' in pip_install_result.stdout"
 
     # требуется установка bcrypt на управляющем хосте Ansible
     - name: Set administrative password
