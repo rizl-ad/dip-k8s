@@ -98,7 +98,7 @@
             project: default
             source:
               repoURL: "{{ github_repo_url }}"
-              targetRevision: HEAD
+              targetRevision: main
               path: "{{ guthub_target }}"
               helm:
                 valueFiles: ["values.yaml"]
