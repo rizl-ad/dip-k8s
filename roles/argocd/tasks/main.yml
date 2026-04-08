@@ -42,7 +42,7 @@
           - passlib
           - bcrypt==4.0.1
           - kubernetes
-        pip-executable: "{{ ansible_playbook_python }}"
+        executable: "{{ ansible_playbook_python | dirname }}/pip"
 
     # требуется установка bcrypt на управляющем хосте Ansible
     - name: Set administrative password
