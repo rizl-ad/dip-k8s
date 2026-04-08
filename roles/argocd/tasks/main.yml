@@ -194,10 +194,14 @@
             name: argocd-server-ingress
             namespace: "{{ argocd_namespace }}"
             annotations:
-              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-              nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
+              kubernetes.io/ingress.class: nginx
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"   # Обязательно: ArgoCD внутри пода использует HTTPS
+              nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"     # Отключаем проверку сертификата между Nginx и подом ArgoCD
+              # nginx.ingress.kubernetes.io/use-regex: "true"
               nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
+              nginx.ingress.kubernetes.io/ssl-redirect: "false"
           spec:
+            # ingressClassName: nginx
             rules:
               - http:
                   paths:
