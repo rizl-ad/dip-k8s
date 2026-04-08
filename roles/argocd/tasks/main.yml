@@ -33,6 +33,17 @@
           field_manager: ansible
           force_conflicts: true
 
+    - name: Install Python packages on control node
+      delegate_to: localhost
+      connection: local
+      become: true
+      ansible.builtin.pip:
+        name: 
+          - passlib
+          - bcrypt==4.0.1
+          - kubernetes
+        executable: "{{ ansible_playbook_python }}"
+
     # требуется установка bcrypt на управляющем хосте Ansible
     - name: Set administrative password
       no_log: true
