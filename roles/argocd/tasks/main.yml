@@ -121,7 +121,7 @@
         definition:
           data:
             server.basehref: "/argocd"
-            server.rootpath: "/argocd"
+            # server.rootpath: "/argocd"
             server.insecure: "true"
 
     - name: Create ArgoCD Ingress
