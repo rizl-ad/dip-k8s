@@ -226,14 +226,14 @@ jobs:
           aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$ANSIBLE_INVENTORY_PATH" "$ANSIBLE_INVENTORY_PATH" --endpoint-url="$TF_BACKEND_S3"
           aws s3 cp "s3://$YC_INFRA_BUCKET_NAME/$YC_INFRA_SA_KEY_FILE_PATH" "$YC_INFRA_SA_KEY_FILE_PATH" --endpoint-url="$TF_BACKEND_S3"
 
-      # - name: Install Ansible requirements
-      #   run: ansible-galaxy collection install -r requirements.yml
+      - name: Install Ansible requirements
+        run: ansible-galaxy collection install -r requirements.yml
 
-      - name: Install dependencies inside Ansible's Python
-        run: |
-          PYTHON_PATH=$(ansible localhost -m debug -a "var=ansible_playbook_python" | grep "ansible_playbook_python" | cut -d '"' -f 4)
-          $PYTHON_PATH -m pip install passlib bcrypt==4.0.1 kubernetes
-          ansible-galaxy collection install kubernetes.core
+      # - name: Install Ansible dependencies
+      #   run: |
+      #    PYTHON_PATH=$(ansible localhost -m debug -a "var=ansible_playbook_python" | grep "ansible_playbook_python" | cut -d '"' -f 4)
+      #    $PYTHON_PATH -m pip install passlib bcrypt==4.0.1 kubernetes
+      #    ansible-galaxy collection install kubernetes.core
 
       - name: Run Ansible playbook
         env:
