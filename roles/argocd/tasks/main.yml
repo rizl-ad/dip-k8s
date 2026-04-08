@@ -167,7 +167,7 @@
                         service:
                           name: argocd-server
                           port:
-                            number: 80
+                            number: 443
                             # name: https
 
       # kubernetes.core.k8s:
