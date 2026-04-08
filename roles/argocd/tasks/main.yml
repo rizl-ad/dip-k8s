@@ -147,7 +147,7 @@
               - http:
                   paths:
                     - path: /argocd(/|$)(.*)
-                      pathType: Prefix
+                      pathType: ImplementationSpecific
                       backend:
                         service:
                           name: argocd-server
