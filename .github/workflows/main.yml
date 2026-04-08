@@ -229,18 +229,8 @@ jobs:
       - name: Install Ansible requirements
         run: ansible-galaxy collection install -r requirements.yml
 
-      # - name: Install Ansible dependencies
-      #   run: |
-      #    PYTHON_PATH=$(ansible localhost -m debug -a "var=ansible_playbook_python" | grep "ansible_playbook_python" | cut -d '"' -f 4)
-      #    $PYTHON_PATH -m pip install passlib bcrypt==4.0.1 kubernetes
-      #    ansible-galaxy collection install kubernetes.core
-
       - name: Run Ansible playbook
         env:
-          # APP_ID: ${{ secrets.YC_K8S_ARC_APP_ID }}
-          # APP_INSTALLATION_ID: ${{ secrets.YC_K8S_ARC_APP_INSTALLATION_ID }}
-          # APP_PRIVATE_KEY: ${{ secrets.YC_K8S_ARC_APP_PRIVATE_KEY }}
-          # APP_NAME: ${{ env.APP_NAME }}
           ARGOCD_ADMIN_PASSWORD: ${{ secrets.ARGOCD_ADMIN_PASSWORD }}
           ANSIBLE_INVENTORY_PATH: ${{ fromJSON(vars.ANSIBLE_INVENTORY).dir_path }}/${{ fromJSON(vars.ANSIBLE_INVENTORY).name }}
           GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
