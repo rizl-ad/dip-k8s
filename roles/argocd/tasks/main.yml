@@ -112,19 +112,60 @@
               syncOptions:
                 - CreateNamespace=true
 
-    - name: Configure ArgoCD base path
+    - name: Configure ArgoCD Mapping for path-based routing
       kubernetes.core.k8s:
-        state: patched
-        kind: ConfigMap
-        name: argocd-cmd-params-cm
-        namespace: "{{ argocd_namespace }}"
+        state: present
         definition:
+          apiVersion: getambassador.io/v2
+          kind: Mapping
+          metadata:
+            name: argocd-server
+            namespace: argocd
+          spec:
+            prefix: /argocd
+            rewrite: /argocd
+            service: https://argocd-server:443
+
+    - name: Configure ArgoCD ConfigMap for path-based routing
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          kind: ConfigMap
+          metadata:
+            name: argocd-cmd-params-cm
+            namespace: "{{ argocd_namespace }}"
+            labels:
+              app.kubernetes.io/name: argocd-cmd-params-cm
+              app.kubernetes.io/part-of: argocd
           data:
             server.basehref: "/argocd"
             server.rootpath: "/argocd"
-            server.insecure: "true"
 
-    - name: Create ArgoCD Ingress
+    - name: Restart argocd-server
+      kubernetes.core.k8s:
+        state: patched
+        kind: Deployment
+        name: argocd-server
+        namespace: "{{ argocd_namespace }}"
+        definition:
+          spec:
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+
+      # kubernetes.core.k8s:
+      #   state: patched
+      #   kind: ConfigMap
+      #   name: argocd-cmd-params-cm
+      #   namespace: "{{ argocd_namespace }}"
+      #   definition:
+      #     data:
+      #       server.basehref: "/argocd"
+      #       server.rootpath: "/argocd"
+      #       server.insecure: "true"
+
+    - name: Create ArgoCD Ingress rule
       kubernetes.core.k8s:
         state: present
         definition:
@@ -134,18 +175,42 @@
             name: argocd-server-ingress
             namespace: "{{ argocd_namespace }}"
             annotations:
-              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-              nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
-              # nginx.ingress.kubernetes.io/use-regex: "true"
-              nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
+              nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+              nginx.ingress.kubernetes.io/ssl-passthrough: "true"
           spec:
+            ingressClassName: nginx
             rules:
               - http:
                   paths:
-                    - path: /argocd
+                    - path: /
                       pathType: Prefix
                       backend:
                         service:
                           name: argocd-server
                           port:
-                            number: 443
+                            name: https
+
+      # kubernetes.core.k8s:
+      #   state: present
+      #   definition:
+      #     apiVersion: networking.k8s.io/v1
+      #     kind: Ingress
+      #     metadata:
+      #       name: argocd-server-ingress
+      #       namespace: "{{ argocd_namespace }}"
+      #       annotations:
+      #         nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      #         nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
+      #         # nginx.ingress.kubernetes.io/use-regex: "true"
+      #         nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
+      #     spec:
+      #       rules:
+      #         - http:
+      #             paths:
+      #               - path: /argocd
+      #                 pathType: Prefix
+      #                 backend:
+      #                   service:
+      #                     name: argocd-server
+      #                     port:
+      #                       number: 443
