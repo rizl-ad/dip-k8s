@@ -112,20 +112,6 @@
               syncOptions:
                 - CreateNamespace=true
 
-    - name: Configure ArgoCD Mapping for path-based routing
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: getambassador.io/v2
-          kind: Mapping
-          metadata:
-            name: argocd-server
-            namespace: argocd
-          spec:
-            prefix: /argocd
-            rewrite: /argocd
-            service: https://argocd-server:443
-
     - name: Configure ArgoCD ConfigMap for path-based routing
       kubernetes.core.k8s:
         state: present
@@ -154,17 +140,6 @@
                 annotations:
                   kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
 
-      # kubernetes.core.k8s:
-      #   state: patched
-      #   kind: ConfigMap
-      #   name: argocd-cmd-params-cm
-      #   namespace: "{{ argocd_namespace }}"
-      #   definition:
-      #     data:
-      #       server.basehref: "/argocd"
-      #       server.rootpath: "/argocd"
-      #       server.insecure: "true"
-
     - name: Create ArgoCD Ingress rule
       kubernetes.core.k8s:
         state: present
@@ -182,13 +157,24 @@
             rules:
               - http:
                   paths:
-                    - path: /
+                    - path: /argocd
                       pathType: Prefix
                       backend:
                         service:
                           name: argocd-server
                           port:
-                            name: https
+                            name: 443
+
+      # kubernetes.core.k8s:
+      #   state: patched
+      #   kind: ConfigMap
+      #   name: argocd-cmd-params-cm
+      #   namespace: "{{ argocd_namespace }}"
+      #   definition:
+      #     data:
+      #       server.basehref: "/argocd"
+      #       server.rootpath: "/argocd"
+      #       # server.insecure: "true"
 
       # kubernetes.core.k8s:
       #   state: present
