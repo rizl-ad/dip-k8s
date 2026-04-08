@@ -134,15 +134,10 @@
             name: argocd-server-ingress
             namespace: "{{ argocd_namespace }}"
             annotations:
-              kubernetes.io/ingress.class: "nginx"
-              nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-              # nginx.ingress.kubernetes.io/rewrite-target: /$2
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+              nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
               # nginx.ingress.kubernetes.io/use-regex: "true"
-              # nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
-              # nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
-              # nginx.ingress.kubernetes.io/ssl-redirect: "false"
-              # nginx.ingress.kubernetes.io/proxy-cookie-path: "/ /argocd"
-              # nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
+              nginx.ingress.kubernetes.io/x-forwarded-prefix: "/argocd"
           spec:
             rules:
               - http:
@@ -153,4 +148,4 @@
                         service:
                           name: argocd-server
                           port:
-                            number: 80
+                            number: 443
