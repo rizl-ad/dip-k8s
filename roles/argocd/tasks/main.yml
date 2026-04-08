@@ -163,7 +163,7 @@
                         service:
                           name: argocd-server
                           port:
-                            name: 443
+                            name: https
 
       # kubernetes.core.k8s:
       #   state: patched
