@@ -167,8 +167,8 @@
         namespace: "{{ argocd_namespace }}"
         definition:
           data:
-            # server.basehref: "/argocd"
-            # server.rootpath: "/argocd"
+            server.basehref: "/argocd"
+            server.rootpath: "/argocd"
             server.insecure: "true"
 
     - name: Restart argocd-server
@@ -205,7 +205,7 @@
             rules:
               - http:
                   paths:
-                    - path: /
+                    - path: /argocd
                       pathType: Prefix
                       backend:
                         service:
