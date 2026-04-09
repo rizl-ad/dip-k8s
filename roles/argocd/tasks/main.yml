@@ -209,7 +209,7 @@
             rules:
               - http:
                   paths:
-                    - path: argocd/?(.*)
+                    - path: /argocd/?(.*)
                       pathType: ImplementationSpecific
                       backend:
                         service:
