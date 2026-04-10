@@ -73,15 +73,11 @@ jobs:
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
         with:
-          working_directory: |
-            ./roles/k8s_nodes
-            ./roles/k8s_master
-            ./roles/k8s_worker
-            ./roles/k8s_master
-            ./roles/helm
-            ./roles/calico
-            ./roles/nginx_ingress
-            ./k8s_cluster.yml
+          args: |
+            --exclude ./roles/kube_prometheus
+            --exclude ./monitoring.yml"
+            --exclude ./roles/argocd
+            --exclude ./argocd.yml"
           requirements_file: "./requirements.yml"
 
       - name: Setup SSH agent
@@ -142,7 +138,7 @@ jobs:
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
         with:
-          path: |
+          args: |
             ./roles/kube_prometheus
             ./monitoring.yml
           requirements_file: "./requirements.yml"
@@ -203,7 +199,7 @@ jobs:
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
         with:
-          path: |
+          args: |
             ./roles/argocd
             ./argocd.yml
           requirements_file: "./requirements.yml"
