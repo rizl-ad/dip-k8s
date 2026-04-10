@@ -6,10 +6,10 @@
     - name: Check Kubernetes API
       kubernetes.core.k8s_info:
         kind: Node
-      register: node_list
+      register: argocd_node_list
       until:
-        - node_list.resources is defined
-        - node_list.resources | length > 0
+        - argocd_node_list.resources is defined
+        - argocd_node_list.resources | length > 0
       retries: 10
       delay: 10
       ignore_errors: false

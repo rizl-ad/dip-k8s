@@ -38,8 +38,8 @@
       connection: local
       ansible.builtin.command:
         cmd: "{{ ansible_playbook_python }} -m pip install passlib bcrypt==4.0.1 kubernetes"
-      register: pip_install_result
-      changed_when: "'Successfully installed' in pip_install_result.stdout"
+      register: argocd_pip_install_result
+      changed_when: "'Successfully installed' in argocd_pip_install_result.stdout"
 
     # требуется установка bcrypt на управляющем хосте Ansible
     - name: Set administrative password

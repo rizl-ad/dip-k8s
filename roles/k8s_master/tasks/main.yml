@@ -56,7 +56,7 @@
             --apiserver-cert-extra-sans={{ k8s_master_apiserver_cert_extra_sans }}
             --control-plane-endpoint={{ k8s_master_control_plane_endpoint }}
             --upload-certs
-          register: kubeadm_init_result
+          register: k8s_master_kubeadm_init_result
           changed_when: "'initialized successfully' in k8s_master_kubeadm_init_result.stdout"
       rescue:
         - name: Kubeadm reset
