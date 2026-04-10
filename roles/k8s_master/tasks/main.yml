@@ -24,7 +24,7 @@
       no_log: true
       diff: false
       become: true
-      ansible.builtin.shell::
+      ansible.builtin.shell:
         cmd: set -o pipefail && kubeadm init phase upload-certs --upload-certs | tail -1
         executable: /bin/bash
       register: k8s_master_cert_key
