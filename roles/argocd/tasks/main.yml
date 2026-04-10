@@ -6,10 +6,10 @@
     - name: Check Kubernetes API
       kubernetes.core.k8s_info:
         kind: Node
-      register: node_list
+      register: argocd_node_list
       until:
-        - node_list.resources is defined
-        - node_list.resources | length > 0
+        - argocd_node_list.resources is defined
+        - argocd_node_list.resources | length > 0
       retries: 10
       delay: 10
       ignore_errors: false
@@ -21,7 +21,7 @@
         state: present
       loop:
         - "{{ argocd_namespace }}"
-        - "{{ app_namespace }}"
+        - "{{ argocd_app_namespace }}"
 
     - name: Install ArgoCD
       kubernetes.core.k8s:
@@ -71,7 +71,7 @@
           kind: Secret
           metadata:
             name: ycr-secret
-            namespace: "{{ app_namespace }}"
+            namespace: "{{ argocd_app_namespace }}"
           type: kubernetes.io/dockerconfigjson
           data:
             .dockerconfigjson: >-
@@ -79,7 +79,7 @@
                 {
                   "auths": {
                     "cr.yandex": {
-                      "auth": ("json_key:" + lookup('file', sa_key_file_path)) | b64encode
+                      "auth": ("json_key:" + lookup('file', argocd_sa_key_file_path)) | b64encode
                     }
                   }
                 } | to_json | b64encode
@@ -92,19 +92,19 @@
           apiVersion: argoproj.io/v1alpha1
           kind: Application
           metadata:
-            name: "{{ app_name }}"
+            name: "{{ argocd_app_name }}"
             namespace: "{{ argocd_namespace }}"
           spec:
             project: default
             source:
-              repoURL: "{{ github_repo_url }}"
+              repoURL: "{{ argocd_github_repo_url }}"
               targetRevision: "v*.*.*"
-              path: "{{ guthub_target }}"
+              path: "{{ argocd_guthub_target }}"
               helm:
                 valueFiles: ["values.yaml"]
             destination:
               server: https://kubernetes.default.svc
-              namespace: "{{ app_namespace }}"
+              namespace: "{{ argocd_app_namespace }}"
             syncPolicy:
               automated:
                 prune: true

@@ -1,4 +1,4 @@
 ---
 # defaults file for ingress-nginx
-apiserver_advertise_address:
-http_node_port:
+ingress_nginx_apiserver_advertise_address:
+ingress_nginx_http_node_port:

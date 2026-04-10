@@ -1,8 +1,8 @@
 ---
 # defaults file for calico
 calico_version: "3.31.3"
-operator_crds_url: "https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/operator-crds.yaml"
-tigera_operator_url: "https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/tigera-operator.yaml"
-custom_resources_url: "https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/custom-resources.yaml"
-pod_network_cidr: "192.168.0.0/16"
-encapsulation: "VXLAN"
+calico_operator_crds_url: "https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/operator-crds.yaml"
+calico_tigera_operator_url: "https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/tigera-operator.yaml"
+calico_custom_resources_url: "https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/custom-resources.yaml"
+calico_pod_network_cidr: "192.168.0.0/16"
+calico_encapsulation: "VXLAN"

@@ -1,18 +1,18 @@
 ---
 # tasks file for ingress-nginx
 - name: Ingress-nginx controller
-  when: ansible_host == apiserver_advertise_address
+  when: ansible_host == ingress_nginx_apiserver_advertise_address
   block:
     - name: Get k8s node list
       kubernetes.core.k8s_info:
         kind: Node
-      register: node_list
+      register: ingress_nginx_node_list
 
     - name: Check worker-nodes available
       ansible.builtin.assert:
         that:
           - (
-              node_list.resources |
+              ingress_nginx_node_list.resources |
               selectattr('metadata.labels', 'defined') |
               rejectattr('metadata.labels["node-role.kubernetes.io/control-plane"]', 'defined') |
               rejectattr('metadata.labels["node-role.kubernetes.io/master"]', 'defined') |
@@ -23,7 +23,7 @@
 
     - name: Install ingress-nginx controller
       when: (
-              node_list.resources |
+              ingress_nginx_node_list.resources |
               selectattr('metadata.labels', 'defined') |
               rejectattr('metadata.labels["node-role.kubernetes.io/control-plane"]', 'defined') |
               rejectattr('metadata.labels["node-role.kubernetes.io/master"]', 'defined') |
@@ -48,7 +48,7 @@
                 service:
                   type: NodePort
                   nodePorts:
-                    http: "{{ http_node_port }}"
+                    http: "{{ ingress_nginx_http_node_port }}"
                 ingressClassResource:
                   name: nginx
                   enabled: true

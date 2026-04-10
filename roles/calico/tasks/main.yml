@@ -17,16 +17,16 @@
     - name: Install operator CRDs
       kubernetes.core.k8s:
         state: present
-        src: "{{ operator_crds_url }}"
+        src: "{{ calico_operator_crds_url }}"
 
     - name: Install Tigera operator
       kubernetes.core.k8s:
         state: present
-        src: "{{ tigera_operator_url }}"
+        src: "{{ calico_tigera_operator_url }}"
 
     - name: Get custom resources
       ansible.builtin.get_url:
-        url: "{{ custom_resources_url }}"
+        url: "{{ calico_custom_resources_url }}"
         dest: "/tmp/custom-resources.yaml"
         mode: "0644"
 
@@ -36,8 +36,8 @@
         regexp: "{{ item.regexp }}"
         replace: "{{ item.replace }}"
       loop:
-        - { regexp: 'cidr: 192\.168\.0\.0/16', replace: "cidr: {{ pod_network_cidr }}" }
-        - { regexp: 'encapsulation: VXLANCrossSubnet', replace: 'encapsulation: {{ encapsulation }}' }
+        - { regexp: 'cidr: 192\.168\.0\.0/16', replace: "cidr: {{ calico_pod_network_cidr }}" }
+        - { regexp: 'encapsulation: VXLANCrossSubnet', replace: 'encapsulation: {{ calico_encapsulation }}' }
 
     - name: Apply custom resources
       kubernetes.core.k8s:

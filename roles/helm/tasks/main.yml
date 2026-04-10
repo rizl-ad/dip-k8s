@@ -8,8 +8,8 @@
       ansible.builtin.package:
         name: apt-transport-https
         state: present
-      register: packages_install_result
-      until: packages_install_result is success
+      register: helm_packages_install_result
+      until: helm_packages_install_result is success
       retries: 30
       delay: 20
 

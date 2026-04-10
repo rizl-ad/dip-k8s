@@ -24,14 +24,14 @@
       ansible.builtin.find:
         paths: ./kube-prometheus/manifests/setup
         patterns: "*.yaml,*.yml"
-      register: setup_files_list
+      register: kube_prometheus_setup_files_list
 
     - name: Apply kube-prometheus setup configurations
       kubernetes.core.k8s:
         src: "{{ item.path }}"
         server_side_apply:
           field_manager: ansible
-      loop: "{{ setup_files_list.files }}"
+      loop: "{{ kube_prometheus_setup_files_list.files }}"
       loop_control:
         label: "{{ item.path | basename }}"
 
@@ -50,13 +50,13 @@
       ansible.builtin.find:
         paths: ./kube-prometheus/manifests
         patterns: "*.yaml,*.yml"
-      register: conf_files_list
+      register: kube_prometheus_conf_files_list
 
     - name: Apply kube-prometheus configurations
       kubernetes.core.k8s:
         state: present
         src: "{{ item.path }}"
-      loop: "{{ conf_files_list.files }}"
+      loop: "{{ kube_prometheus_conf_files_list.files }}"
       loop_control:
         label: "{{ item.path | basename }}"
 
