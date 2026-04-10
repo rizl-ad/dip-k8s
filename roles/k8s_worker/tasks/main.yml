@@ -16,5 +16,7 @@
   no_log: true
   diff: false
   become: true
-  ansible.builtin.shell: "{{ hostvars['K8s_data']['join_worker_cmd'] }}"
+  ansible.builtin.command: "{{ hostvars['K8s_data']['join_worker_cmd'] }}"
   when: not check_init_kubeadm.stat.exists
+  register: kubeadm_join_result
+  changed_when: "'node has joined the cluster' in kubeadm_join_result.stdout"

@@ -4,6 +4,8 @@
   become: true
   ansible.builtin.command: swapoff -a
   when: ansible_swaptotal_mb > 0
+  register: swapoff_result
+  changed_when: swapoff_result.stdout == ""
 
 - name: Delete swap from fstab
   become: true
