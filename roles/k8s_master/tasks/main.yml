@@ -116,8 +116,8 @@
           ansible.builtin.add_host:
             name: "K8s_data"
             main_master_name: "{{ inventory_hostname }}"
-            join_worker_cmd: "{{ join_worker.stdout }}"
-            join_master_cmd: "{{ join_worker.stdout }} --control-plane --certificate-key {{ k8s_master_cert_key.stdout }}"
+            join_worker_cmd: "{{ k8s_master_join_worker.stdout }}"
+            join_master_cmd: "{{ k8s_master_join_worker.stdout }} --control-plane --certificate-key {{ k8s_master_cert_key.stdout }}"
 
 - name: Join master-node to Kubernetes cluster
   become: true
