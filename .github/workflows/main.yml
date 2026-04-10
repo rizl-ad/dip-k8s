@@ -73,12 +73,7 @@ jobs:
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
         with:
-          args: |
-            --exclude .github
-            --exclude ./roles/kube_prometheus
-            --exclude ./monitoring.yml"
-            --exclude ./roles/argocd
-            --exclude ./argocd.yml"
+          args: --exclude .github ./roles/kube_prometheus ./monitoring.yml ./roles/argocd ./argocd.yml
           requirements_file: "./requirements.yml"
 
       - name: Setup SSH agent
@@ -139,10 +134,7 @@ jobs:
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
         with:
-          args: |
-            --exclude .github
-            ./roles/kube_prometheus
-            ./monitoring.yml
+          args: ./roles/kube_prometheus ./monitoring.yml --exclude .github
           requirements_file: "./requirements.yml"
 
       - name: Setup SSH agent
@@ -201,12 +193,8 @@ jobs:
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
         with:
-          args: |
-            --exclude .github
-            ./roles/argocd
-            ./argocd.yml
+          args: ./roles/argocd ./argocd.yml --exclude .github
           requirements_file: "./requirements.yml"
-
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.10.0
         with:
