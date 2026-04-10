@@ -69,6 +69,20 @@ jobs:
     steps:
       - name: Clone repository on runner
         uses: actions/checkout@v6
+      
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        with:
+          path: |
+            ./roles/k8s_nodes
+            ./roles/k8s_master
+            ./roles/k8s_worker
+            ./roles/k8s_master
+            ./roles/helm
+            ./roles/calico
+            ./roles/nginx_ingress
+            ./k8s_cluster.yml
+          requirements_file: "./requirements.yml"
 
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.10.0
@@ -125,6 +139,14 @@ jobs:
       - name: Clone repository on runner
         uses: actions/checkout@v6
 
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        with:
+          path: |
+            ./roles/kube_prometheus
+            ./monitoring.yml
+          requirements_file: "./requirements.yml"
+
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.10.0
         with:
@@ -177,6 +199,14 @@ jobs:
     steps:
       - name: Clone repository on runner
         uses: actions/checkout@v6
+
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        with:
+          path: |
+            ./roles/argocd
+            ./argocd.yml
+          requirements_file: "./requirements.yml"
 
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.10.0
@@ -236,7 +266,7 @@ jobs:
           GITHUB_REPO_URL: "https://github.com/rizl-ad/dip-app"
           GUTHUB_TARGET: charts/diplom-app
           YC_INFRA_SA_KEY_FILE_PATH: ${{ fromJSON(vars.YC_INFRA_SA_KEY_FILE).dir_path }}/${{ fromJSON(vars.YC_INFRA_SA_KEY_FILE).name }}
-          # ansible читает переменнst APP_NAME, APP_NAMESPACE
+          # ansible читает переменные APP_NAME, APP_NAMESPACE
         run: ansible-playbook -i "$ANSIBLE_INVENTORY_PATH" argocd.yml
 
   app:
