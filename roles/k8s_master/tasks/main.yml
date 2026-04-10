@@ -26,7 +26,7 @@
       become: true
       ansible.builtin.shell: set -o pipefail && sudo kubeadm init phase upload-certs --upload-certs | tail -1
       register: k8s_master_cert_key
-      changed_when: k8s_master_cert_key.stdout != ""
+      changed_when: k8s_master_cert_key.stdout | length != 64
 
     - name: Publish join command and first master name
       no_log: true
@@ -104,7 +104,7 @@
           diff: false
           ansible.builtin.shell: set -o pipefail && sudo kubeadm init phase upload-certs --upload-certs | tail -1
           register: k8s_master_cert_key
-          changed_when: k8s_master_cert_key.stdout != ""
+          changed_when: k8s_master_cert_key.stdout | length != 64
 
         - name: Publish join command and first master name
           no_log: true
