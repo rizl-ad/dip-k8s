@@ -6,10 +6,10 @@
     - name: Check Kubernetes API
       kubernetes.core.k8s_info:
         kind: Node
-      register: argocd_node_list
+      register: calico_node_list
       until:
-        - argocd_node_list.resources is defined
-        - argocd_node_list.resources | length > 0
+        - calico_node_list.resources is defined
+        - calico_node_list.resources | length > 0
       retries: 10
       delay: 10
       ignore_errors: false
