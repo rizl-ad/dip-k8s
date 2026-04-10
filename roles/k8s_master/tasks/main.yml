@@ -24,7 +24,9 @@
       no_log: true
       diff: false
       become: true
-      ansible.builtin.shell: set -o pipefail && sudo kubeadm init phase upload-certs --upload-certs | tail -1
+      ansible.builtin.shell::
+        cmd: set -o pipefail && kubeadm init phase upload-certs --upload-certs | tail -1
+        executable: /bin/bash
       register: k8s_master_cert_key
       changed_when: k8s_master_cert_key.stdout | length != 64
 
@@ -102,7 +104,9 @@
           become: true
           no_log: true
           diff: false
-          ansible.builtin.shell: set -o pipefail && sudo kubeadm init phase upload-certs --upload-certs | tail -1
+          ansible.builtin.shell:
+            cmd: set -o pipefail && kubeadm init phase upload-certs --upload-certs | tail -1
+            executable: /bin/bash
           register: k8s_master_cert_key
           changed_when: k8s_master_cert_key.stdout | length != 64
 
