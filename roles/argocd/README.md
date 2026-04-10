@@ -19,13 +19,13 @@ Role Variables
 
 | variable | default value | description |
 | -------- | ------------- | ----------- |
-| `app_name` | "{{ lookup('env', 'APP_NAME') }}" | Name of the deployed application. |
-| `app_namespace` | "{{ lookup('env', 'APP_NAMESPACE') }}" | The name of the namespace into which applications should be deployed. |
+| `argocd_app_name` | "{{ lookup('env', 'APP_NAME') }}" | Name of the deployed application. |
+| `argocd_app_namespace` | "{{ lookup('env', 'APP_NAMESPACE') }}" | The name of the namespace into which applications should be deployed. |
 | `argocd_admin_password` | "{{ lookup('env', 'ARGOCD_ADMIN_PASSWORD') }}" | ArgoCD administrative password |
 | `argocd_namespace` | argocd | The name of the namespace into which all ArgoCD components will be installed. |
 | `github_repo_url` | "{{ lookup('env', 'GITHUB_REPO_URL') }}" | The URL of the GitHub repository that ArgoCD will track changes to. |
 | `guthub_target` | "{{ lookup('env', 'GUTHUB_TARGET') }}" | Path to the directory with helm charts. |
-| `sa_key_file_path` | "{{ lookup('env', 'YC_INFRA_SA_KEY_FILE_PATH') }}" | Path to the file containing the Yandex Cloud service account key |
+| `argocd_sa_key_file_path` | "{{ lookup('env', 'YC_INFRA_SA_KEY_FILE_PATH') }}" | Path to the file containing the Yandex Cloud service account key |
 
 Dependencies
 ------------
