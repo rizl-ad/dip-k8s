@@ -1,7 +1,7 @@
 ---
 # defaults file for k8s_nodes
-k8s_version: "1.35"
-k8s_deb_baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/"
-k8s_deb_gpg_key_url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key"
-k8s_rpm_baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/"
-k8s_rpm_gpg_key_url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/rpm/repodata/repomd.xml.key"
+k8s_nodes_version: "{{ lookup('env', 'K8S_VERSION') }}"
+k8s_nodes_deb_baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_nodes_version }}/deb/"
+k8s_nodes_deb_gpg_key_url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_nodes_version }}/deb/Release.key"
+k8s_nodes_rpm_baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_nodes_version }}/rpm/"
+k8s_nodes_rpm_gpg_key_url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_nodes_version }}/rpm/repodata/repomd.xml.key"

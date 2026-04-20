@@ -3,38 +3,13 @@
 - name: Install Calico CNI-plugin
   when: ansible_host == apiserver_advertise_address
   block:
-    - name: Install requirements (Debian/Ubuntu)
-      become: true
-      ansible.builtin.apt:
-        name:
-          - python3-kubernetes
-          - python3-yaml
-        state: present
-      when: ansible_os_family == "Debian"
-      register: requirements_package_install_result
-      until: requirements_package_install_result is success
-      retries: 30
-      delay: 20
-
-    - name: Install requirements (RedHat/Fedora)
-      ansible.builtin.pip:
-        name:
-          - kubernetes
-          - PyYAML
-        state: present
-      when: ansible_os_family == "RedHat"
-      register: requirements_package_install_result
-      until: requirements_package_install_result is success
-      retries: 30
-      delay: 20
-
     - name: Check Kubernetes API
       kubernetes.core.k8s_info:
         kind: Node
-      register: node_list
+      register: calico_node_list
       until:
-        - node_list.resources is defined
-        - node_list.resources | length > 0
+        - calico_node_list.resources is defined
+        - calico_node_list.resources | length > 0
       retries: 10
       delay: 10
       ignore_errors: false
@@ -42,16 +17,16 @@
     - name: Install operator CRDs
       kubernetes.core.k8s:
         state: present
-        src: "{{ operator_crds_url }}"
+        src: "{{ calico_operator_crds_url }}"
 
     - name: Install Tigera operator
       kubernetes.core.k8s:
         state: present
-        src: "{{ tigera_operator_url }}"
+        src: "{{ calico_tigera_operator_url }}"
 
-    - name: Get custom-resources.yaml
+    - name: Get custom resources
       ansible.builtin.get_url:
-        url: "{{ custom_resources_url }}"
+        url: "{{ calico_custom_resources_url }}"
         dest: "/tmp/custom-resources.yaml"
         mode: "0644"
 
@@ -61,15 +36,15 @@
         regexp: "{{ item.regexp }}"
         replace: "{{ item.replace }}"
       loop:
-        - { regexp: 'cidr: 192\.168\.0\.0/16', replace: "cidr: {{ pod_network_cidr }}" }
-        - { regexp: 'encapsulation: VXLANCrossSubnet', replace: 'encapsulation: {{ encapsulation }}' }
+        - { regexp: 'cidr: 192\.168\.0\.0/16', replace: "cidr: {{ calico_pod_network_cidr }}" }
+        - { regexp: 'encapsulation: VXLANCrossSubnet', replace: 'encapsulation: {{ calico_encapsulation }}' }
 
-    - name: Apply custom-resources.yaml
+    - name: Apply custom resources
       kubernetes.core.k8s:
         state: present
         src: "/tmp/custom-resources.yaml"
 
-    - name: Wait Calico pods run
+    - name: Wait for Calico pods to run
       kubernetes.core.k8s_info:
         kind: Pod
         namespace: calico-system

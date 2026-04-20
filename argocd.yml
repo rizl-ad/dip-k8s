@@ -1,0 +1,17 @@
+---
+- name: Check hosts availability
+  hosts: k8s_master
+  gather_facts: false
+  tasks:
+    - name: Check SSH availability
+      ansible.builtin.wait_for_connection:
+        delay: 5
+        timeout: 300
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+- name: Install ArgoCD
+  hosts: k8s_master
+  roles:
+    - argocd

@@ -4,6 +4,8 @@
   become: true
   ansible.builtin.command: swapoff -a
   when: ansible_swaptotal_mb > 0
+  register: k8s_nodes_swapoff_result
+  changed_when: k8s_nodes_swapoff_result.stdout == ""
 
 - name: Delete swap from fstab
   become: true
@@ -11,12 +13,6 @@
     path: none
     fstype: swap
     state: absent
-
-# - name: Delete swapfile
-#   become: true
-#   ansible.builtin.file:
-#     path: /swapfile
-#     state: absent
 
 - name: Enable IP forwarding
   become: true
@@ -39,6 +35,31 @@
     update_cache: true
   when: ansible_pkg_mgr == 'dnf'
 
+- name: Install required Python packages (Debian/Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - python3-kubernetes
+      - python3-yaml
+    state: present
+  when: ansible_os_family == "Debian"
+  register: k8s_nodes_requirements_package_install_result
+  until: k8s_nodes_requirements_package_install_result is success
+  retries: 30
+  delay: 20
+
+- name: Install required Python modules (RedHat/Fedora)
+  ansible.builtin.pip:
+    name:
+      - kubernetes
+      - PyYAML
+    state: present
+  when: ansible_os_family == "RedHat"
+  register: k8s_nodes_requirements_package_install_result
+  until: k8s_nodes_requirements_package_install_result is success
+  retries: 30
+  delay: 20
+
 - name: Install containerd and required packages
   become: true
   ansible.builtin.package:
@@ -48,21 +69,21 @@
       - curl
       - gpg
     state: present
-  register: package_install_result
-  until: package_install_result is success
+  register: k8s_nodes_requirements_package_install_result
+  until: k8s_nodes_requirements_package_install_result is success
   retries: 30
   delay: 20
 
 - name: Kubernetes GPG-key (Debian/Ubuntu)
   when: ansible_os_family == "Debian"
   block:
-    - name: Install containerd and required packages
+    - name: Install apt-transport-https
       become: true
       ansible.builtin.package:
         name: apt-transport-https
         state: present
-      register: package_install_result
-      until: package_install_result is success
+      register: k8s_nodes_requirements_package_install_result
+      until: k8s_nodes_requirements_package_install_result is success
       retries: 30
       delay: 20
 
@@ -78,7 +99,7 @@
     - name: Get Kubernetes GPG-key
       become: true
       ansible.builtin.get_url:
-        url: "{{ k8s_deb_gpg_key_url }}"
+        url: "{{ k8s_nodes_deb_gpg_key_url }}"
         dest: /tmp/k8s-release.key
         mode: '0644'
 
@@ -91,7 +112,7 @@
     - name: Add Kubernetes repository
       become: true
       ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] {{ k8s_deb_baseurl }} /"
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] {{ k8s_nodes_deb_baseurl }} /"
         filename: kubernetes
         state: present
         update_cache: true
@@ -102,7 +123,7 @@
     - name: Import Kubernetes GPG-key
       become: true
       ansible.builtin.rpm_key:
-        key: "{{ k8s_rpm_gpg_key_url }}"
+        key: "{{ k8s_nodes_rpm_gpg_key_url }}"
         state: present
 
     - name: Add Kubernetes repository
@@ -110,10 +131,10 @@
       ansible.builtin.yum_repository:
         name: kubernetes
         description: Kubernetes
-        baseurl: "{{ k8s_rpm_baseurl }}"
+        baseurl: "{{ k8s_nodes_rpm_baseurl }}"
         enabled: true
         gpgcheck: true
-        gpgkey: "{{ k8s_rpm_gpg_key_url }}"
+        gpgkey: "{{ k8s_nodes_rpm_gpg_key_url }}"
       notify: Update dnf cache
 
     - name: Flush handlers
@@ -127,8 +148,8 @@
       - kubeadm
       - kubectl
     state: present
-  register: kube_package_install_result
-  until: kube_package_install_result is success
+  register: k8s_nodes_kube_package_install_result
+  until: k8s_nodes_kube_package_install_result is success
   retries: 30
   delay: 20
 

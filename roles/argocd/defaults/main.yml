@@ -1,0 +1,9 @@
+---
+# defaults file for argocd
+argocd_app_name: "{{ lookup('env', 'APP_NAME') }}"
+argocd_app_namespace: "{{ lookup('env', 'APP_NAMESPACE') }}"
+argocd_admin_password: "{{ lookup('env', 'ARGOCD_ADMIN_PASSWORD') }}"
+argocd_namespace: argocd
+argocd_github_repo_url: "{{ lookup('env', 'GITHUB_REPO_URL') }}"
+argocd_guthub_target: "{{ lookup('env', 'GUTHUB_TARGET') }}"
+argocd_sa_key_file_path: "{{ lookup('env', 'YC_INFRA_SA_KEY_FILE_PATH') }}"

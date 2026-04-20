@@ -24,14 +24,14 @@
       ansible.builtin.find:
         paths: ./kube-prometheus/manifests/setup
         patterns: "*.yaml,*.yml"
-      register: setup_files_list
+      register: kube_prometheus_setup_files_list
 
     - name: Apply kube-prometheus setup configurations
       kubernetes.core.k8s:
         src: "{{ item.path }}"
         server_side_apply:
           field_manager: ansible
-      loop: "{{ setup_files_list.files }}"
+      loop: "{{ kube_prometheus_setup_files_list.files }}"
       loop_control:
         label: "{{ item.path | basename }}"
 
@@ -50,15 +50,33 @@
       ansible.builtin.find:
         paths: ./kube-prometheus/manifests
         patterns: "*.yaml,*.yml"
-      register: conf_files_list
+      register: kube_prometheus_conf_files_list
 
     - name: Apply kube-prometheus configurations
       kubernetes.core.k8s:
         state: present
         src: "{{ item.path }}"
-      loop: "{{ conf_files_list.files }}"
+      loop: "{{ kube_prometheus_conf_files_list.files }}"
       loop_control:
         label: "{{ item.path | basename }}"
+
+    - name: Patch Grafana Deployment for Sub-path
+      kubernetes.core.k8s:
+        state: patched
+        kind: Deployment
+        name: grafana
+        namespace: monitoring
+        definition:
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: grafana
+                    env:
+                      - name: GF_SERVER_ROOT_URL
+                        value: "%(protocol)s://%(domain)s:%(http_port)s/grafana/"
+                      - name: GF_SERVER_SERVE_FROM_SUB_PATH
+                        value: "true"
 
     - name: Create kube-prometheus ingress rule
       kubernetes.core.k8s:
@@ -77,7 +95,7 @@
             rules:
               - http:
                   paths:
-                    - path: /
+                    - path: /grafana
                       pathType: Prefix
                       backend:
                         service:

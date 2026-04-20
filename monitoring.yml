@@ -1,0 +1,17 @@
+---
+- name: Check hosts availability
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check SSH availability
+      ansible.builtin.wait_for_connection:
+        delay: 5
+        timeout: 300
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+- name: Deploy kube-prometheus
+  hosts: k8s_master
+  roles:
+    - kube_prometheus

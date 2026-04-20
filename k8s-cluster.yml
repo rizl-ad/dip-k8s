@@ -5,7 +5,7 @@
   tasks:
     - name: Check SSH availability
       ansible.builtin.wait_for_connection:
-        delay: 10
+        delay: 5
         timeout: 300
 
     - name: Gather facts
@@ -21,6 +21,7 @@
   roles:
     - k8s_master
     - calico
+    - helm
 
 - name: Deploy K8s worker
   hosts: k8s_worker
@@ -31,4 +32,3 @@
   hosts: k8s_master
   roles:
     - ingress_nginx
-    - kube_prometheus
