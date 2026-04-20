@@ -19,8 +19,8 @@ Role Variables
 
 | variable | default value | description |
 | -------- | ------------- | ----------- |
-| `ingress_nginx_apiserver_advertise_address` | "{{ apiserver_advertise_address }}" | The IP address specified in the `--apiserver-advertise-address` parameter when initializing the Kubernetes cluster, or the IP address of the VIP of the Kubernetes cluster control-plane, or the IP address of the master-node of the Kubernetes cluster |
-| `ingress_nginx_http_node_port` | "{{ http_node_port }}" | Port number for a NodePort type service in the range 30000–32767 |
+| `ingress_nginx_apiserver_advertise_address` | `"{{ apiserver_advertise_address }}"` | The IP address specified in the `--apiserver-advertise-address` parameter when initializing the Kubernetes cluster, or the IP address of the VIP of the Kubernetes cluster control-plane, or the IP address of the master-node of the Kubernetes cluster |
+| `ingress_nginx_http_node_port` | `"{{ http_node_port }}"` | Port number for a NodePort type service in the range 30000–32767 |
 
 Dependencies
 ------------
